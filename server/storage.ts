@@ -3,6 +3,7 @@ import { features, type Feature, type InsertFeature } from "@shared/schema";
 export interface IStorage {
   createFeature(feature: InsertFeature & { generatedContent: string }): Promise<Feature>;
   getFeature(id: number): Promise<Feature | undefined>;
+  getAllFeatures(): Promise<Feature[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -25,6 +26,10 @@ export class MemStorage implements IStorage {
 
   async getFeature(id: number): Promise<Feature | undefined> {
     return this.features.get(id);
+  }
+
+  async getAllFeatures(): Promise<Feature[]> {
+    return Array.from(this.features.values()).sort((a, b) => b.id - a.id);
   }
 }
 

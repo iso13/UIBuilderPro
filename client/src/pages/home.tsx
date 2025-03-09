@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Wand2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { FeatureList } from "@/components/ui/feature-list";
 import {
   Form,
   FormControl,
@@ -30,6 +31,7 @@ import { insertFeatureSchema, type InsertFeature } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [generatedFeature, setGeneratedFeature] = useState<string>("");
 
   const form = useForm<InsertFeature>({
@@ -49,6 +51,7 @@ export default function Home() {
     },
     onSuccess: (data) => {
       setGeneratedFeature(data.generatedContent);
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       toast({
         title: "Success",
         description: "Feature generated successfully",
@@ -203,6 +206,8 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <FeatureList />
       </motion.div>
     </div>
   );

@@ -5,6 +5,15 @@ import { generateFeature } from "./openai";
 import { insertFeatureSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.get("/api/features", async (_req, res) => {
+    try {
+      const features = await storage.getAllFeatures();
+      res.json(features);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/features/generate", async (req, res) => {
     try {
       const data = insertFeatureSchema.parse(req.body);
