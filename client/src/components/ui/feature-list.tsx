@@ -9,10 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useCollaboration } from "@/hooks/use-collaboration";
 import type { Feature } from "@shared/schema";
 
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
+  const { userId, startEditing, stopEditing, viewing } = useCollaboration();
 
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
@@ -51,12 +53,24 @@ export function FeatureList() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   className="border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => setSelectedFeature(feature)}
+                  onClick={() => {
+                    setSelectedFeature(feature);
+                    viewing(feature.id);
+                  }}
                 >
                   <h3 className="text-lg font-semibold truncate">{feature.title}</h3>
                   <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                     {feature.story}
                   </p>
+                  {feature.activeEditor && feature.activeEditor !== userId && (
+                    <div className="mt-2 text-xs text-orange-500 flex items-center gap-1">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                      </span>
+                      Currently being edited
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </AnimatePresence>

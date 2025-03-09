@@ -9,6 +9,8 @@ export const features = pgTable("features", {
   scenarioCount: integer("scenario_count").notNull(),
   generatedContent: text("generated_content"),
   manuallyEdited: boolean("manually_edited").default(false).notNull(),
+  activeEditor: text("active_editor"),
+  activeEditorTimestamp: timestamp("active_editor_timestamp"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -54,3 +56,11 @@ export type Analytics = typeof analytics.$inferSelect;
 
 // Sorting options
 export type SortOption = "title" | "date";
+
+// WebSocket message types
+export type WebSocketMessage = {
+  type: "start_editing" | "stop_editing" | "viewing";
+  featureId: number;
+  userId: string;
+  timestamp: string;
+};
