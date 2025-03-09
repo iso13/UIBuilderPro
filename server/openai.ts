@@ -18,6 +18,7 @@ export async function generateFeature(
       .join('')}`;
 
     const aiPrompt = `Generate a Cucumber BDD feature file for the feature titled "${title}" with ${scenarioCount} scenarios.
+    IMPORTANT: Use exactly ONE feature tag that matches this format: ${featureTag}
 
     Feature Story:
     ${story}
@@ -30,14 +31,15 @@ export async function generateFeature(
     - Use clear, concise language that describes the expected system behavior
     - Scenarios should be understandable by non-technical stakeholders
     - IMPORTANT: There should be no empty line between Feature: Title and the story
+    - IMPORTANT: Include exactly ONE tag at the top of the feature file
 
     Example of Declarative vs Imperative:
     Imperative: "When I click the Add User button and enter details"
     Declarative: "When a new user is created with valid information"
 
     Example Format:
-    @featureTag
-    Feature: Feature Title
+    ${featureTag}
+    Feature: ${title}
     As a user, I want to do something
     So that I can achieve a goal
 
@@ -53,7 +55,7 @@ export async function generateFeature(
       messages: [
         {
           role: "system",
-          content: "You are an expert in writing Cucumber features. Generate a feature file based on the given guidelines."
+          content: "You are an expert in writing Cucumber features. Generate a feature file based on the given guidelines. Always include exactly ONE feature tag that matches the provided format."
         },
         {
           role: "user",
@@ -72,10 +74,8 @@ export async function generateFeature(
     // Remove any double newlines between Feature: and the story
     featureContent = featureContent.replace(/Feature:([^\n]+)\n\n/g, 'Feature:$1\n');
 
-    // Ensure feature tag is at the top and no duplicate feature title
-    if (!featureContent.startsWith(featureTag)) {
-      featureContent = `${featureTag}\n${featureContent}`;
-    }
+    // Ensure only one feature tag is present and it's the correct one
+    featureContent = featureContent.replace(/@[\w]+\s*\n(@[\w]+\s*\n)*/, `${featureTag}\n`);
 
     return featureContent;
   } catch (error: any) {
