@@ -60,33 +60,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const data = updateFeatureSchema.parse(req.body);
 
-      let feature = await storage.updateFeature(id, {
-        ...data,
-        manuallyEdited: data.generatedContent ? true : undefined,
-      });
-
-      if (!feature) {
+      // Get the current feature
+      const currentFeature = await storage.getFeature(id);
+      if (!currentFeature) {
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      // Only regenerate content if story/scenarioCount changed and content wasn't manually edited
-      if (!data.generatedContent && (data.story || data.scenarioCount)) {
-        const updatedFeature = await storage.getFeature(id);
-        if (updatedFeature && !updatedFeature.manuallyEdited) {
-          const generatedContent = await generateFeature(
-            updatedFeature.title,
-            updatedFeature.story,
-            updatedFeature.scenarioCount
-          );
+      // Check if scenario count has changed and feature wasn't manually edited
+      const scenarioCountChanged = data.scenarioCount && data.scenarioCount !== currentFeature.scenarioCount;
+      const shouldRegenerateContent = scenarioCountChanged && !currentFeature.manuallyEdited;
 
-          feature = await storage.updateFeature(id, {
-            generatedContent,
-            manuallyEdited: false,
-          });
-        }
+      if (shouldRegenerateContent) {
+        // Regenerate content with new scenario count
+        const generatedContent = await generateFeature(
+          currentFeature.title,
+          currentFeature.story,
+          data.scenarioCount!
+        );
+
+        const feature = await storage.updateFeature(id, {
+          ...data,
+          generatedContent,
+          manuallyEdited: false,
+        });
+        res.json(feature);
+      } else {
+        // Regular update without regenerating content
+        const feature = await storage.updateFeature(id, {
+          ...data,
+          manuallyEdited: data.generatedContent ? true : currentFeature.manuallyEdited,
+        });
+        res.json(feature);
       }
-
-      res.json(feature);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
