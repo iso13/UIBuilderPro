@@ -406,13 +406,14 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {feature.story}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(feature.createdAt).toLocaleDateString()}
-                    </p>
-                    <div className="absolute bottom-2 right-2">
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(feature.createdAt).toLocaleDateString()}
+                      </p>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-6 w-6"
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingFeature(feature);
