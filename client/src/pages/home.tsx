@@ -310,7 +310,7 @@ export default function Home() {
                   disabled={generateMutation.isPending}
                 >
                   {generateMutation.isPending ? (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center justify-center gap-2">
                       <LoadingSpinner />
                       Generating...
                     </span>
@@ -564,7 +564,7 @@ export default function Home() {
                     disabled={editMutation.isPending}
                   >
                     {editMutation.isPending ? (
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center justify-center gap-2">
                         <LoadingSpinner />
                         Updating...
                       </span>
@@ -582,6 +582,9 @@ export default function Home() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Generating Feature</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Please wait while we generate your feature content...
+              </p>
             </DialogHeader>
             <div className="py-6">
               <ProgressSteps steps={generationSteps} />
