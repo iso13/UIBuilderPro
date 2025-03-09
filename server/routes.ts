@@ -54,6 +54,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/features/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = insertFeatureSchema.partial().parse(req.body);
+
+      const feature = await storage.updateFeature(id, data);
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+
+      // If story or scenario count changed, regenerate the content
+      if (data.story || data.scenarioCount) {
+        const updatedFeature = await storage.getFeature(id);
+        if (updatedFeature) {
+          const generatedContent = await generateFeature(
+            updatedFeature.title,
+            updatedFeature.story,
+            updatedFeature.scenarioCount
+          );
+
+          const finalFeature = await storage.updateFeature(id, { generatedContent });
+          return res.json(finalFeature);
+        }
+      }
+
+      res.json(feature);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   app.get("/api/analytics", async (_req, res) => {
     try {
       const analyticsData = await storage.getAnalytics();

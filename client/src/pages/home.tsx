@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { apiRequest } from "@/lib/queryClient";
 import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption } from "@shared/schema";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Home() {
   const { toast } = useToast();
@@ -40,6 +46,7 @@ export default function Home() {
   const [currentFeature, setCurrentFeature] = useState<Feature | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("date");
+  const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -101,8 +108,61 @@ export default function Home() {
     },
   });
 
+  const editMutation = useMutation({
+    mutationFn: async (data: { id: number } & Partial<InsertFeature>) => {
+      const res = await apiRequest(
+        "PATCH",
+        `/api/features/${data.id}`,
+        { title: data.title, story: data.story, scenarioCount: data.scenarioCount }
+      );
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      setEditingFeature(null);
+      toast({
+        title: "Success",
+        description: "Feature updated successfully",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+        duration: 3000,
+      });
+    },
+  });
+
+  const editForm = useForm<InsertFeature>({
+    resolver: zodResolver(insertFeatureSchema),
+    defaultValues: {
+      title: "",
+      story: "",
+      scenarioCount: 2,
+    },
+  });
+
+  useEffect(() => {
+    if (editingFeature) {
+      editForm.reset({
+        title: editingFeature.title,
+        story: editingFeature.story,
+        scenarioCount: editingFeature.scenarioCount,
+      });
+    }
+  }, [editingFeature, editForm]);
+
+
   const onSubmit = (data: InsertFeature) => {
     generateMutation.mutate(data);
+  };
+
+  const onEdit = (data: InsertFeature) => {
+    if (!editingFeature) return;
+    editMutation.mutate({ id: editingFeature.id, ...data });
   };
 
   return (
@@ -285,12 +345,16 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                    className={`relative border rounded-lg p-4 cursor-pointer transition-colors ${
                       currentFeature?.id === feature.id
                         ? "border-primary bg-primary/5"
                         : "hover:border-primary/50"
                     }`}
                     onClick={() => setCurrentFeature(feature)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setEditingFeature(feature);
+                    }}
                   >
                     <h3 className="text-lg font-semibold truncate">{feature.title}</h3>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
@@ -299,6 +363,18 @@ export default function Home() {
                     <p className="text-xs text-muted-foreground mt-2">
                       {new Date(feature.createdAt).toLocaleDateString()}
                     </p>
+                    <div className="absolute top-2 right-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingFeature(feature);
+                        }}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -311,6 +387,91 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+        <Dialog open={editingFeature !== null} onOpenChange={(open) => !open && setEditingFeature(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Feature</DialogTitle>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEdit)} className="space-y-6">
+                <FormField
+                  control={editForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Feature Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter feature title" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="story"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Feature Story</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter feature story"
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="scenarioCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Number of Scenarios</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                        defaultValue={field.value.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select number of scenarios" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <SelectItem key={num} value={num.toString()}>
+                              {num}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={editMutation.isPending}
+                >
+                  {editMutation.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <LoadingSpinner />
+                      Updating...
+                    </span>
+                  ) : (
+                    "Update Feature"
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </div>
   );
