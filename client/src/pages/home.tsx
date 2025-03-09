@@ -293,7 +293,9 @@ export default function Home() {
                           )}
                         </div>
                       </FormControl>
-                      <FormMessage />
+                      <div className={`${isDuplicate ? "text-red-400 dark:text-red-400" : ""}`}>
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
