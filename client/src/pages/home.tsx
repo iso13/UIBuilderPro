@@ -102,14 +102,14 @@ export default function Home() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGenerationSteps(steps => steps.map(step =>
         step.id === "analyzing" ? { ...step, status: "completed" } :
-        step.id === "generating" ? { ...step, status: "current" } : step
+          step.id === "generating" ? { ...step, status: "current" } : step
       ));
 
       // Step 2: Generating
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGenerationSteps(steps => steps.map(step =>
         step.id === "generating" ? { ...step, status: "completed" } :
-        step.id === "finalizing" ? { ...step, status: "current" } : step
+          step.id === "finalizing" ? { ...step, status: "current" } : step
       ));
 
       // Step 3: Making the actual API call
@@ -395,25 +395,21 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className={`relative border rounded-lg p-4 cursor-pointer transition-colors ${
+                    className={`relative border rounded-lg p-4 pb-12 cursor-pointer transition-colors ${
                       currentFeature?.id === feature.id
                         ? "border-primary bg-primary/5"
                         : "hover:border-primary/50"
                     }`}
                     onClick={() => setCurrentFeature(feature)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setEditingFeature(feature);
-                    }}
                   >
-                    <h3 className="text-lg font-semibold truncate">{feature.title}</h3>
+                    <h3 className="text-lg font-semibold truncate pr-2">{feature.title}</h3>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {feature.story}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
                       {new Date(feature.createdAt).toLocaleDateString()}
                     </p>
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute bottom-2 right-2">
                       <Button
                         variant="ghost"
                         size="icon"
