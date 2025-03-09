@@ -88,7 +88,18 @@ export default function Home() {
   }, [isDuplicate, form]);
 
   const { data: features = [] } = useQuery<Feature[]>({
-    queryKey: ["/api/features"],
+    queryKey: ["/api/features", { includeDeleted: filterOption === "all" || filterOption === "deleted" }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filterOption === "all" || filterOption === "deleted") {
+        params.append("includeDeleted", "true");
+      }
+      const res = await apiRequest("GET", `/api/features?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch features");
+      }
+      return res.json();
+    },
   });
 
   const filteredAndSortedFeatures = useMemo(() => {
