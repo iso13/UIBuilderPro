@@ -108,15 +108,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
   wss.on('connection', (ws) => {
+    console.log('New WebSocket connection established');
+
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString()) as WebSocketMessage;
+        console.log('Received WebSocket message:', message);
 
         switch (message.type) {
           case 'start_editing':
             await storage.updateFeature(message.featureId, {
               activeEditor: message.userId,
-              activeEditorTimestamp: new Date().toISOString(),
+              activeEditorTimestamp: new Date(),
             });
             break;
           case 'stop_editing':
@@ -129,13 +132,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Broadcast the message to all connected clients
         wss.clients.forEach((client) => {
-          if (client !== ws && client.readyState === ws.OPEN) {
+          if (client !== ws && client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(message));
           }
         });
       } catch (error) {
         console.error('WebSocket message error:', error);
       }
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
     });
   });
 
