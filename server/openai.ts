@@ -30,6 +30,7 @@ export async function generateFeature(
     - Avoid mentioning specific UI elements or technical implementation details
     - Use clear, concise language that describes the expected system behavior
     - Scenarios should be understandable by non-technical stakeholders
+    - IMPORTANT: Use a Background section for Given steps that are common across all scenarios
     - IMPORTANT: There should be no empty line between Feature: Title and the story
     - IMPORTANT: Include exactly ONE tag at the top of the feature file
 
@@ -43,8 +44,11 @@ export async function generateFeature(
     As a user, I want to do something
     So that I can achieve a goal
 
+    Background:
+      Given I am logged in as a user
+      And I have necessary permissions
+
     Scenario: First Scenario
-      Given some context
       When an action occurs
       Then there is an outcome`;
 
@@ -53,7 +57,7 @@ export async function generateFeature(
       messages: [
         {
           role: "system",
-          content: "You are an expert in writing Cucumber features. Generate a feature file based on the given guidelines. Always include exactly ONE feature tag that matches the provided format."
+          content: "You are an expert in writing Cucumber features. Generate a feature file based on the given guidelines. Always include exactly ONE feature tag that matches the provided format, and use Background for common Given steps."
         },
         {
           role: "user",
