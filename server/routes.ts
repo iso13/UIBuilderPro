@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateFeature } from "./openai";
+import { generateFeature, getSuggestions } from "./openai";
 import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -111,6 +111,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const analyticsData = await storage.getAnalytics();
       res.json(analyticsData);
     } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/suggest", async (req, res) => {
+    try {
+      const { story } = req.body;
+      if (!story || typeof story !== 'string') {
+        return res.status(400).json({ message: "Story text is required" });
+      }
+
+      const suggestions = await getSuggestions(story);
+      res.json(suggestions);
+    } catch (error: any) {
+      console.error('Error getting suggestions:', error);
       res.status(500).json({ message: error.message });
     }
   });

@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/dialog";
 import { ProgressSteps, type Step } from "@/components/ui/progress-steps";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSuggestions } from "@/hooks/use-suggestions";
+import { SuggestionsDisplay } from "@/components/ui/suggestions-display";
 
 export default function Home() {
   const { toast } = useToast();
@@ -65,6 +67,9 @@ export default function Home() {
       scenarioCount: 2,
     },
   });
+
+  const story = form.watch("story");
+  const { suggestions, isLoading: suggestionsLoading } = useSuggestions(story);
 
   const { data: features = [] } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
@@ -271,6 +276,10 @@ export default function Home() {
                           {...field}
                         />
                       </FormControl>
+                      <SuggestionsDisplay 
+                        suggestions={suggestions} 
+                        isLoading={suggestionsLoading} 
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
