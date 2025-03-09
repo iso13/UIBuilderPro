@@ -1,5 +1,5 @@
 import { features, analytics, type Feature, type InsertFeature, type Analytics, type InsertAnalytics } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -17,6 +17,7 @@ export interface IStorage {
   updateFeature(id: number, feature: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature>;
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
   getAnalytics(): Promise<Analytics[]>;
+  findFeatureByTitle(title: string): Promise<Feature | undefined>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -42,6 +43,15 @@ export class PostgresStorage implements IStorage {
       .set(updateData)
       .where(eq(features.id, id))
       .returning();
+    return feature;
+  }
+
+  async findFeatureByTitle(title: string): Promise<Feature | undefined> {
+    const [feature] = await db
+      .select()
+      .from(features)
+      .where(ilike(features.title, title))
+      .limit(1);
     return feature;
   }
 

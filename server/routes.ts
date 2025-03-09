@@ -18,6 +18,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const data = insertFeatureSchema.parse(req.body);
 
+      // Check for duplicate title
+      const existingFeature = await storage.findFeatureByTitle(data.title);
+      if (existingFeature) {
+        return res.status(400).json({ 
+          message: "A feature with this title already exists. Please use a different title." 
+        });
+      }
+
       // Track generation attempt
       const analyticsEvent = {
         eventType: "feature_generation",
@@ -64,6 +72,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentFeature = await storage.getFeature(id);
       if (!currentFeature) {
         return res.status(404).json({ message: "Feature not found" });
+      }
+
+      // If title is being changed, check for duplicates
+      if (data.title && data.title !== currentFeature.title) {
+        const existingFeature = await storage.findFeatureByTitle(data.title);
+        if (existingFeature && existingFeature.id !== id) {
+          return res.status(400).json({ 
+            message: "A feature with this title already exists. Please use a different title." 
+          });
+        }
       }
 
       // If scenarioCount changed or title changed, always regenerate
