@@ -1,36 +1,45 @@
-import { features, type Feature, type InsertFeature } from "@shared/schema";
+import { features, analytics, type Feature, type InsertFeature, type Analytics, type InsertAnalytics } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+
+const connectionString = process.env.DATABASE_URL;
+const client = postgres(connectionString!);
+const db = drizzle(client);
 
 export interface IStorage {
   createFeature(feature: InsertFeature & { generatedContent: string }): Promise<Feature>;
   getFeature(id: number): Promise<Feature | undefined>;
   getAllFeatures(): Promise<Feature[]>;
+  trackEvent(event: InsertAnalytics): Promise<Analytics>;
+  getAnalytics(): Promise<Analytics[]>;
 }
 
-export class MemStorage implements IStorage {
-  private features: Map<number, Feature>;
-  private currentId: number;
-
-  constructor() {
-    this.features = new Map();
-    this.currentId = 1;
-  }
-
+export class PostgresStorage implements IStorage {
   async createFeature(
     insertFeature: InsertFeature & { generatedContent: string }
   ): Promise<Feature> {
-    const id = this.currentId++;
-    const feature: Feature = { ...insertFeature, id };
-    this.features.set(id, feature);
+    const [feature] = await db.insert(features).values(insertFeature).returning();
     return feature;
   }
 
   async getFeature(id: number): Promise<Feature | undefined> {
-    return this.features.get(id);
+    const [feature] = await db.select().from(features).where(eq(features.id, id));
+    return feature;
   }
 
   async getAllFeatures(): Promise<Feature[]> {
-    return Array.from(this.features.values()).sort((a, b) => b.id - a.id);
+    return await db.select().from(features).orderBy(features.id);
+  }
+
+  async trackEvent(event: InsertAnalytics): Promise<Analytics> {
+    const [analytic] = await db.insert(analytics).values(event).returning();
+    return analytic;
+  }
+
+  async getAnalytics(): Promise<Analytics[]> {
+    return await db.select().from(analytics).orderBy(analytics.createdAt);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new PostgresStorage();

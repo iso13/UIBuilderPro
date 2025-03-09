@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,6 +8,15 @@ export const features = pgTable("features", {
   story: text("story").notNull(),
   scenarioCount: integer("scenario_count").notNull(),
   generatedContent: text("generated_content"),
+});
+
+export const analytics = pgTable("analytics", {
+  id: serial("id").primaryKey(),
+  eventType: text("event_type").notNull(), // 'feature_generation', 'feature_view'
+  scenarioCount: integer("scenario_count"),
+  successful: boolean("successful").notNull(),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertFeatureSchema = createInsertSchema(features)
@@ -22,5 +31,15 @@ export const insertFeatureSchema = createInsertSchema(features)
     scenarioCount: z.number().min(1).max(10),
   });
 
+export const insertAnalyticsSchema = createInsertSchema(analytics)
+  .pick({
+    eventType: true,
+    scenarioCount: true,
+    successful: true,
+    errorMessage: true,
+  });
+
 export type InsertFeature = z.infer<typeof insertFeatureSchema>;
 export type Feature = typeof features.$inferSelect;
+export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
+export type Analytics = typeof analytics.$inferSelect;
