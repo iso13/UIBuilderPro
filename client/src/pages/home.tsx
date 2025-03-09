@@ -3,9 +3,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { Wand2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   Form,
   FormControl,
@@ -67,15 +69,24 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <div className="flex flex-col gap-8">
-        <div className="text-center">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-8"
+      >
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
             Feature Generator
           </h1>
           <p className="text-muted-foreground mt-2">
             Generate Cucumber features using AI
           </p>
-        </div>
+        </motion.div>
 
         <Card>
           <CardHeader>
@@ -150,7 +161,10 @@ export default function Home() {
                   disabled={generateMutation.isPending}
                 >
                   {generateMutation.isPending ? (
-                    "Generating..."
+                    <span className="flex items-center gap-2">
+                      <LoadingSpinner />
+                      Generating...
+                    </span>
                   ) : (
                     <>
                       <Wand2 className="mr-2 h-4 w-4" />
@@ -163,19 +177,33 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {generatedFeature && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Generated Feature</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
-                {generatedFeature}
-              </pre>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+        <AnimatePresence>
+          {generatedFeature && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generated Feature</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <motion.pre 
+                    className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    {generatedFeature}
+                  </motion.pre>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
