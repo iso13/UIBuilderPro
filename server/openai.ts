@@ -80,32 +80,3 @@ export async function generateFeature(
     throw new Error(`Failed to generate feature: ${error.message}`);
   }
 }
-
-export async function getSuggestions(
-  currentStory: string,
-): Promise<{ suggestions: string[] }> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert in BDD (Behavior-Driven Development) and writing user stories. Analyze the provided story and respond with a JSON object containing an array of suggestions for improvement. Format your response as: { \"suggestions\": [\"suggestion1\", \"suggestion2\", \"suggestion3\"] }"
-        },
-        {
-          role: "user",
-          content: `Please analyze this feature story and provide up to 3 brief suggestions in JSON format to improve its clarity, completeness, and alignment with BDD best practices: "${currentStory}"`
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 200,
-      response_format: { type: "json_object" }
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    return { suggestions: result.suggestions || [] };
-  } catch (error: any) {
-    console.error('Error getting suggestions:', error);
-    return { suggestions: [] };
-  }
-}

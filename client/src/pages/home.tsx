@@ -31,8 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { apiRequest } from "@/lib/queryClient";
-import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +39,8 @@ import {
 } from "@/components/ui/dialog";
 import { ProgressSteps, type Step } from "@/components/ui/progress-steps";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useSuggestions } from "@/hooks/use-suggestions";
-import { SuggestionsDisplay } from "@/components/ui/suggestions-display";
+import { apiRequest } from "@/lib/queryClient";
+import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
@@ -67,9 +65,6 @@ export default function Home() {
       scenarioCount: 2,
     },
   });
-
-  const story = form.watch("story");
-  const { suggestions, isLoading: suggestionsLoading } = useSuggestions(story);
 
   const { data: features = [] } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
@@ -276,10 +271,6 @@ export default function Home() {
                           {...field}
                         />
                       </FormControl>
-                      <SuggestionsDisplay 
-                        suggestions={suggestions} 
-                        isLoading={suggestionsLoading} 
-                      />
                       <FormMessage />
                     </FormItem>
                   )}
