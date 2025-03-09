@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiRequest } from "@/lib/queryClient";
-import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption } from "@shared/schema";
+import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +47,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("date");
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
+  const [isContentEdited, setIsContentEdited] = useState(false);
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -109,17 +110,23 @@ export default function Home() {
   });
 
   const editMutation = useMutation({
-    mutationFn: async (data: { id: number } & Partial<InsertFeature>) => {
+    mutationFn: async (data: { id: number } & Partial<InsertFeature & { generatedContent?: string }>) => {
       const res = await apiRequest(
         "PATCH",
         `/api/features/${data.id}`,
-        { title: data.title, story: data.story, scenarioCount: data.scenarioCount }
+        { 
+          title: data.title, 
+          story: data.story, 
+          scenarioCount: data.scenarioCount,
+          generatedContent: data.generatedContent,
+        }
       );
       return res.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       setEditingFeature(null);
+      setIsContentEdited(false);
       toast({
         title: "Success",
         description: "Feature updated successfully",
@@ -136,12 +143,13 @@ export default function Home() {
     },
   });
 
-  const editForm = useForm<InsertFeature>({
-    resolver: zodResolver(insertFeatureSchema),
+  const editForm = useForm<InsertFeature & { generatedContent: string }>({
+    resolver: zodResolver(updateFeatureSchema),
     defaultValues: {
       title: "",
       story: "",
       scenarioCount: 2,
+      generatedContent: "",
     },
   });
 
@@ -151,16 +159,17 @@ export default function Home() {
         title: editingFeature.title,
         story: editingFeature.story,
         scenarioCount: editingFeature.scenarioCount,
+        generatedContent: editingFeature.generatedContent || "",
       });
+      setIsContentEdited(editingFeature.manuallyEdited || false);
     }
   }, [editingFeature, editForm]);
-
 
   const onSubmit = (data: InsertFeature) => {
     generateMutation.mutate(data);
   };
 
-  const onEdit = (data: InsertFeature) => {
+  const onEdit = (data: InsertFeature & { generatedContent: string }) => {
     if (!editingFeature) return;
     editMutation.mutate({ id: editingFeature.id, ...data });
   };
@@ -388,7 +397,7 @@ export default function Home() {
           </CardContent>
         </Card>
         <Dialog open={editingFeature !== null} onOpenChange={(open) => !open && setEditingFeature(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Feature</DialogTitle>
             </DialogHeader>
@@ -454,20 +463,55 @@ export default function Home() {
                   )}
                 />
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={editMutation.isPending}
-                >
-                  {editMutation.isPending ? (
-                    <span className="flex items-center gap-2">
-                      <LoadingSpinner />
-                      Updating...
-                    </span>
-                  ) : (
-                    "Update Feature"
+                <FormField
+                  control={editForm.control}
+                  name="generatedContent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Feature Content</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter Gherkin feature content"
+                          className="min-h-[300px] font-mono"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e.target.value);
+                            setIsContentEdited(true);
+                          }}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {isContentEdited 
+                          ? "This feature has been manually edited" 
+                          : "Edit the content directly to customize scenarios and steps"}
+                      </p>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Button>
+                />
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditingFeature(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={editMutation.isPending}
+                  >
+                    {editMutation.isPending ? (
+                      <span className="flex items-center gap-2">
+                        <LoadingSpinner />
+                        Updating...
+                      </span>
+                    ) : (
+                      "Update Feature"
+                    )}
+                  </Button>
+                </div>
               </form>
             </Form>
           </DialogContent>

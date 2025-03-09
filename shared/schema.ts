@@ -8,6 +8,7 @@ export const features = pgTable("features", {
   story: text("story").notNull(),
   scenarioCount: integer("scenario_count").notNull(),
   generatedContent: text("generated_content"),
+  manuallyEdited: boolean("manually_edited").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -30,7 +31,12 @@ export const insertFeatureSchema = createInsertSchema(features)
     title: z.string().min(1, "Title is required"),
     story: z.string().min(10, "Story must be at least 10 characters"),
     scenarioCount: z.number().min(1).max(10),
+    generatedContent: z.string().optional(),
   });
+
+export const updateFeatureSchema = insertFeatureSchema.partial().extend({
+  generatedContent: z.string().min(1, "Feature content is required"),
+});
 
 export const insertAnalyticsSchema = createInsertSchema(analytics)
   .pick({
@@ -41,6 +47,7 @@ export const insertAnalyticsSchema = createInsertSchema(analytics)
   });
 
 export type InsertFeature = z.infer<typeof insertFeatureSchema>;
+export type UpdateFeature = z.infer<typeof updateFeatureSchema>;
 export type Feature = typeof features.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
 export type Analytics = typeof analytics.$inferSelect;

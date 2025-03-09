@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateFeature } from "./openai";
-import { insertFeatureSchema, insertAnalyticsSchema } from "@shared/schema";
+import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
@@ -36,6 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const feature = await storage.createFeature({
           ...data,
           generatedContent,
+          manuallyEdited: false,
         });
 
         // Update analytics with success
@@ -57,25 +58,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/features/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const data = insertFeatureSchema.partial().parse(req.body);
+      const data = updateFeatureSchema.parse(req.body);
 
-      const feature = await storage.updateFeature(id, data);
+      let feature = await storage.updateFeature(id, {
+        ...data,
+        manuallyEdited: data.generatedContent ? true : undefined,
+      });
+
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      // If story or scenario count changed, regenerate the content
-      if (data.story || data.scenarioCount) {
+      // Only regenerate content if story/scenarioCount changed and content wasn't manually edited
+      if (!data.generatedContent && (data.story || data.scenarioCount)) {
         const updatedFeature = await storage.getFeature(id);
-        if (updatedFeature) {
+        if (updatedFeature && !updatedFeature.manuallyEdited) {
           const generatedContent = await generateFeature(
             updatedFeature.title,
             updatedFeature.story,
             updatedFeature.scenarioCount
           );
 
-          const finalFeature = await storage.updateFeature(id, { generatedContent });
-          return res.json(finalFeature);
+          feature = await storage.updateFeature(id, { 
+            generatedContent,
+            manuallyEdited: false,
+          });
         }
       }
 

@@ -11,17 +11,17 @@ const client = postgres(connectionString!, {
 const db = drizzle(client);
 
 export interface IStorage {
-  createFeature(feature: InsertFeature & { generatedContent: string }): Promise<Feature>;
+  createFeature(feature: InsertFeature & { generatedContent: string, manuallyEdited?: boolean }): Promise<Feature>;
   getFeature(id: number): Promise<Feature | undefined>;
   getAllFeatures(): Promise<Feature[]>;
-  updateFeature(id: number, feature: Partial<InsertFeature>): Promise<Feature>;
+  updateFeature(id: number, feature: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature>;
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
   getAnalytics(): Promise<Analytics[]>;
 }
 
 export class PostgresStorage implements IStorage {
   async createFeature(
-    insertFeature: InsertFeature & { generatedContent: string }
+    insertFeature: InsertFeature & { generatedContent: string, manuallyEdited?: boolean }
   ): Promise<Feature> {
     const [feature] = await db.insert(features).values(insertFeature).returning();
     return feature;
@@ -36,7 +36,7 @@ export class PostgresStorage implements IStorage {
     return await db.select().from(features).orderBy(features.id);
   }
 
-  async updateFeature(id: number, updateData: Partial<InsertFeature>): Promise<Feature> {
+  async updateFeature(id: number, updateData: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature> {
     const [feature] = await db
       .update(features)
       .set(updateData)
