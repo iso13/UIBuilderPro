@@ -3,8 +3,11 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+// Create a new postgres client with SSL configuration for Replit
 const connectionString = process.env.DATABASE_URL;
-const client = postgres(connectionString!);
+const client = postgres(connectionString!, {
+  ssl: 'require',
+});
 const db = drizzle(client);
 
 export interface IStorage {
