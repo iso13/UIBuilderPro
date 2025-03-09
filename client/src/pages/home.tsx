@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Wand2, ChevronDown, ChevronUp } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Wand2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -27,14 +27,11 @@ import {
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { insertFeatureSchema, type InsertFeature, type Feature } from "@shared/schema";
-import { FeatureList } from "@/components/ui/feature-list";
 
 export default function Home() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentFeature, setCurrentFeature] = useState<Feature | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showForm, setShowForm] = useState(true);
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -45,24 +42,25 @@ export default function Home() {
     },
   });
 
+  const { data: features = [] } = useQuery<Feature[]>({
+    queryKey: ["/api/features"],
+  });
+
   const generateMutation = useMutation({
     mutationFn: async (data: InsertFeature) => {
       const res = await apiRequest("POST", "/api/features/generate", data);
-      const json = await res.json();
-      return json;
+      return res.json();
     },
     onSuccess: (data) => {
       setCurrentFeature(data);
-      setIsGenerating(false);
-      setShowForm(false);
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      form.reset();
       toast({
         title: "Success",
         description: "Feature generated successfully",
       });
     },
     onError: (error) => {
-      setIsGenerating(false);
       toast({
         title: "Error",
         description: error.message,
@@ -72,11 +70,8 @@ export default function Home() {
   });
 
   const onSubmit = (data: InsertFeature) => {
-    setIsGenerating(true);
     generateMutation.mutate(data);
   };
-
-  const features = queryClient.getQueryData<Feature[]>(['/api/features']) || [];
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -100,143 +95,119 @@ export default function Home() {
         </motion.div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>
-              {currentFeature && !showForm ? currentFeature.title : "Generate New Feature"}
-            </CardTitle>
-            {currentFeature && (
-              <Button
-                variant="ghost"
-                onClick={() => setShowForm(!showForm)}
-              >
-                {showForm ? (
-                  <>
-                    View Feature
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    Edit Feature
-                    <ChevronUp className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            )}
+          <CardHeader>
+            <CardTitle>Generate New Feature</CardTitle>
           </CardHeader>
           <CardContent>
-            <AnimatePresence mode="wait">
-              {showForm ? (
-                <motion.div
-                  key="form"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Feature Title</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter feature title" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Feature Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter feature title" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                      <FormField
-                        control={form.control}
-                        name="story"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Feature Story</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Enter feature story"
-                                className="min-h-[100px]"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                <FormField
+                  control={form.control}
+                  name="story"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Feature Story</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter feature story"
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                      <FormField
-                        control={form.control}
-                        name="scenarioCount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Number of Scenarios</FormLabel>
-                            <Select
-                              onValueChange={(value) => field.onChange(parseInt(value, 10))}
-                              defaultValue={field.value.toString()}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select number of scenarios" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {[1, 2, 3, 4, 5].map((num) => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={isGenerating}
+                <FormField
+                  control={form.control}
+                  name="scenarioCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Number of Scenarios</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(parseInt(value, 10))}
+                        defaultValue={field.value.toString()}
                       >
-                        {isGenerating ? (
-                          <span className="flex items-center gap-2">
-                            <LoadingSpinner />
-                            Generating...
-                          </span>
-                        ) : (
-                          <>
-                            <Wand2 className="mr-2 h-4 w-4" />
-                            Generate Feature
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
-                </motion.div>
-              ) : currentFeature && (
-                <motion.div
-                  key="feature"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-4"
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select number of scenarios" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5].map((num) => (
+                            <SelectItem key={num} value={num.toString()}>
+                              {num}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={generateMutation.isPending}
                 >
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Story</h4>
-                    <p className="text-sm text-muted-foreground">{currentFeature.story}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Generated Content</h4>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap text-sm">
-                      {currentFeature.generatedContent}
-                    </pre>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {generateMutation.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <LoadingSpinner />
+                      Generating...
+                    </span>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Generate Feature
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
           </CardContent>
         </Card>
+
+        {currentFeature && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>{currentFeature.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Story</h4>
+                  <p className="text-sm text-muted-foreground">{currentFeature.story}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Generated Content</h4>
+                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap text-sm">
+                    {currentFeature.generatedContent}
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <Card>
           <CardHeader>
@@ -256,10 +227,7 @@ export default function Home() {
                         ? "border-primary bg-primary/5" 
                         : "hover:border-primary/50"
                     }`}
-                    onClick={() => {
-                      setCurrentFeature(feature);
-                      setShowForm(false);
-                    }}
+                    onClick={() => setCurrentFeature(feature)}
                   >
                     <h3 className="text-lg font-semibold truncate">{feature.title}</h3>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
