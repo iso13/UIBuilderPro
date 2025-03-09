@@ -58,6 +58,7 @@ export default function Home() {
       toast({
         title: "Success",
         description: "Feature generated successfully",
+        duration: 3000, // Auto dismiss after 3 seconds
       });
     },
     onError: (error) => {
@@ -65,6 +66,7 @@ export default function Home() {
         title: "Error",
         description: error.message,
         variant: "destructive",
+        duration: 3000, // Auto dismiss after 3 seconds
       });
     },
   });
@@ -74,11 +76,11 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="mx-auto px-4 sm:px-6 lg:px-8 w-full">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-8"
+        className="flex flex-col gap-8 py-8"
       >
         <motion.div 
           className="text-center"
@@ -214,7 +216,7 @@ export default function Home() {
             <CardTitle>Generated Features</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <AnimatePresence>
                 {features.map((feature: Feature) => (
                   <motion.div
