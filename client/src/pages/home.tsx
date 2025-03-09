@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2, Trash2, RefreshCw } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -248,7 +248,7 @@ export default function Home() {
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       toast({
         title: "Success",
-        description: "Feature moved to archive",
+        description: "Feature has been archived",
         duration: 3000,
       });
     },
@@ -551,34 +551,52 @@ export default function Home() {
                         {new Date(feature.createdAt).toLocaleDateString()}
                       </p>
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            feature.deleted
-                              ? restoreMutation.mutate(feature.id)
-                              : deleteMutation.mutate(feature.id);
-                          }}
-                        >
-                          {feature.deleted ? (
-                            <RefreshCw className="h-4 w-4" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingFeature(feature);
-                          }}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  feature.deleted
+                                    ? restoreMutation.mutate(feature.id)
+                                    : deleteMutation.mutate(feature.id);
+                                }}
+                              >
+                                {feature.deleted ? (
+                                  <RefreshCw className="h-4 w-4" />
+                                ) : (
+                                  <Archive className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {feature.deleted ? "Restore Feature" : "Archive Feature"}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingFeature(feature);
+                                }}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Edit Feature
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                   </motion.div>
