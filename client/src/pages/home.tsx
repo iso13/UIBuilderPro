@@ -115,6 +115,12 @@ export default function Home() {
 
       // Step 3: Making the actual API call
       const res = await apiRequest("POST", "/api/features/generate", data);
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message);
+      }
+
       const result = await res.json();
 
       // Step 4: Finalizing
@@ -140,10 +146,10 @@ export default function Home() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: "Cannot Generate Feature",
         description: error.message,
         variant: "destructive",
-        duration: 3000,
+        duration: 5000,
       });
       // Reset states
       setIsGenerating(false);
@@ -163,6 +169,12 @@ export default function Home() {
           generatedContent: data.generatedContent,
         }
       );
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message);
+      }
+
       return res.json();
     },
     onSuccess: (data) => {
@@ -177,10 +189,9 @@ export default function Home() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: "Cannot Update Feature",
         description: error.message,
-        variant: "destructive",
-        duration: 3000,
+        duration: 5000,
       });
     },
   });
