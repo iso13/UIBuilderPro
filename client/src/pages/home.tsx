@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2 } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Trash2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption,
 import * as z from 'zod';
 import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
 
+type FeatureFilter = "all" | "active" | "deleted";
+
 export default function Home() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -58,6 +60,7 @@ export default function Home() {
     { id: "generating", label: "Generating Scenarios", status: "waiting" },
     { id: "finalizing", label: "Finalizing Content", status: "waiting" },
   ]);
+  const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -98,6 +101,13 @@ export default function Home() {
       );
     }
 
+    // Apply deleted filter
+    if (filterOption === "active") {
+      result = result.filter(feature => !feature.deleted);
+    } else if (filterOption === "deleted") {
+      result = result.filter(feature => feature.deleted);
+    }
+
     // Apply sorting
     result.sort((a, b) => {
       if (sortOption === "title") {
@@ -108,7 +118,7 @@ export default function Home() {
     });
 
     return result;
-  }, [features, searchQuery, sortOption]);
+  }, [features, searchQuery, sortOption, filterOption]);
 
   const generateMutation = useMutation({
     mutationFn: async (data: InsertFeature) => {
@@ -210,6 +220,60 @@ export default function Home() {
         title: "Cannot Update Feature",
         description: error.message,
         duration: 5000,
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/features/${id}/delete`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Success",
+        description: "Feature moved to archive",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+        duration: 3000,
+      });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/features/${id}/restore`);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Success",
+        description: "Feature restored successfully",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+        duration: 3000,
       });
     },
   });
@@ -412,6 +476,19 @@ export default function Home() {
                   className="pl-9 w-[200px]"
                 />
               </div>
+              <Select
+                value={filterOption}
+                onValueChange={(value: FeatureFilter) => setFilterOption(value)}
+              >
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Filter features" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Features</SelectItem>
+                  <SelectItem value="active">Active Features</SelectItem>
+                  <SelectItem value="deleted">Archived Features</SelectItem>
+                </SelectContent>
+              </Select>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">
@@ -462,17 +539,36 @@ export default function Home() {
                       <p className="text-xs text-muted-foreground">
                         {new Date(feature.createdAt).toLocaleDateString()}
                       </p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingFeature(feature);
-                        }}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            feature.deleted
+                              ? restoreMutation.mutate(feature.id)
+                              : deleteMutation.mutate(feature.id);
+                          }}
+                        >
+                          {feature.deleted ? (
+                            <RefreshCw className="h-4 w-4" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingFeature(feature);
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </motion.div>
                 ))}

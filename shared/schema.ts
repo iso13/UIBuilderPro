@@ -9,6 +9,7 @@ export const features = pgTable("features", {
   scenarioCount: integer("scenario_count").notNull(),
   generatedContent: text("generated_content"),
   manuallyEdited: boolean("manually_edited").default(false).notNull(),
+  deleted: boolean("deleted").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -54,3 +55,6 @@ export type Analytics = typeof analytics.$inferSelect;
 
 // Sorting options
 export type SortOption = "title" | "date";
+
+// Filter options for features
+export type FeatureFilter = "all" | "active" | "deleted";

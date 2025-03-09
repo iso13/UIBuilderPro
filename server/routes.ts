@@ -7,7 +7,8 @@ import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema } from 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
     try {
-      const features = await storage.getAllFeatures();
+      const includeDeleted = _req.query.includeDeleted === 'true';
+      const features = await storage.getAllFeatures(includeDeleted);
       res.json(features);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -121,6 +122,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error updating feature:', error);
       res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/:id/delete", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const feature = await storage.softDeleteFeature(id);
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+      res.json(feature);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/:id/restore", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const feature = await storage.restoreFeature(id);
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+      res.json(feature);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

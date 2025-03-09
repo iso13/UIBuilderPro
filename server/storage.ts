@@ -13,8 +13,10 @@ const db = drizzle(client);
 export interface IStorage {
   createFeature(feature: InsertFeature & { generatedContent: string, manuallyEdited?: boolean }): Promise<Feature>;
   getFeature(id: number): Promise<Feature | undefined>;
-  getAllFeatures(): Promise<Feature[]>;
+  getAllFeatures(includeDeleted?: boolean): Promise<Feature[]>;
   updateFeature(id: number, feature: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature>;
+  softDeleteFeature(id: number): Promise<Feature>;
+  restoreFeature(id: number): Promise<Feature>;
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
   getAnalytics(): Promise<Analytics[]>;
   findFeatureByTitle(title: string): Promise<Feature | undefined>;
@@ -33,14 +35,36 @@ export class PostgresStorage implements IStorage {
     return feature;
   }
 
-  async getAllFeatures(): Promise<Feature[]> {
-    return await db.select().from(features).orderBy(features.id);
+  async getAllFeatures(includeDeleted: boolean = false): Promise<Feature[]> {
+    let query = db.select().from(features);
+    if (!includeDeleted) {
+      query = query.where(eq(features.deleted, false));
+    }
+    return await query.orderBy(features.id);
   }
 
   async updateFeature(id: number, updateData: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature> {
     const [feature] = await db
       .update(features)
       .set(updateData)
+      .where(eq(features.id, id))
+      .returning();
+    return feature;
+  }
+
+  async softDeleteFeature(id: number): Promise<Feature> {
+    const [feature] = await db
+      .update(features)
+      .set({ deleted: true })
+      .where(eq(features.id, id))
+      .returning();
+    return feature;
+  }
+
+  async restoreFeature(id: number): Promise<Feature> {
+    const [feature] = await db
+      .update(features)
+      .set({ deleted: false })
       .where(eq(features.id, id))
       .returning();
     return feature;
