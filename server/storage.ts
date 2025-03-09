@@ -14,12 +14,7 @@ export interface IStorage {
   createFeature(feature: InsertFeature & { generatedContent: string, manuallyEdited?: boolean }): Promise<Feature>;
   getFeature(id: number): Promise<Feature | undefined>;
   getAllFeatures(): Promise<Feature[]>;
-  updateFeature(id: number, feature: Partial<InsertFeature & { 
-    generatedContent?: string, 
-    manuallyEdited?: boolean,
-    activeEditor?: string | null,
-    activeEditorTimestamp?: string | null 
-  }>): Promise<Feature>;
+  updateFeature(id: number, feature: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature>;
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
   getAnalytics(): Promise<Analytics[]>;
 }
@@ -41,12 +36,7 @@ export class PostgresStorage implements IStorage {
     return await db.select().from(features).orderBy(features.id);
   }
 
-  async updateFeature(id: number, updateData: Partial<InsertFeature & { 
-    generatedContent?: string, 
-    manuallyEdited?: boolean,
-    activeEditor?: string | null,
-    activeEditorTimestamp?: string | null 
-  }>): Promise<Feature> {
+  async updateFeature(id: number, updateData: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature> {
     const [feature] = await db
       .update(features)
       .set(updateData)

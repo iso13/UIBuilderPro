@@ -1,9 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import WebSocket, { WebSocketServer } from "ws";
 import { storage } from "./storage";
 import { generateFeature } from "./openai";
-import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema, type WebSocketMessage } from "@shared/schema";
+import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
@@ -103,48 +102,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
-
-  // Setup WebSocket server
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-
-  wss.on('connection', (ws) => {
-    console.log('New WebSocket connection established');
-
-    ws.on('message', async (data) => {
-      try {
-        const message = JSON.parse(data.toString()) as WebSocketMessage;
-        console.log('Received WebSocket message:', message);
-
-        switch (message.type) {
-          case 'start_editing':
-            await storage.updateFeature(message.featureId, {
-              activeEditor: message.userId,
-              activeEditorTimestamp: new Date(),
-            });
-            break;
-          case 'stop_editing':
-            await storage.updateFeature(message.featureId, {
-              activeEditor: null,
-              activeEditorTimestamp: null,
-            });
-            break;
-        }
-
-        // Broadcast the message to all connected clients
-        wss.clients.forEach((client) => {
-          if (client !== ws && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(message));
-          }
-        });
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
-    });
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
-  });
-
   return httpServer;
 }

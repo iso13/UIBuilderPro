@@ -40,8 +40,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProgressSteps, type Step } from "@/components/ui/progress-steps";
-import { useCollaboration } from '@/hooks/use-collaboration';
-
 
 export default function Home() {
   const { toast } = useToast();
@@ -57,7 +55,6 @@ export default function Home() {
     { id: "generating", label: "Generating Scenarios", status: "waiting" },
     { id: "finalizing", label: "Finalizing Content", status: "waiting" },
   ]);
-  const { userId, startEditing, stopEditing } = useCollaboration();
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -422,16 +419,7 @@ export default function Home() {
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (feature.activeEditor && feature.activeEditor !== userId) {
-                            toast({
-                              title: "Feature is being edited",
-                              description: "This feature is currently being edited by another user",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
                           setEditingFeature(feature);
-                          startEditing(feature.id);
                         }}
                       >
                         <Edit2 className="h-4 w-4" />
@@ -449,19 +437,11 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
-        <Dialog open={editingFeature !== null} onOpenChange={(open) => { if (!open && editingFeature) { stopEditing(editingFeature.id); setEditingFeature(null); }}}>
+
+        <Dialog open={editingFeature !== null} onOpenChange={(open) => !open && setEditingFeature(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Feature</DialogTitle>
-              {editingFeature?.activeEditor && editingFeature.activeEditor !== userId && (
-                <div className="text-sm text-orange-500 flex items-center gap-2 mt-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                  </span>
-                  Someone else is currently editing this feature
-                </div>
-              )}
             </DialogHeader>
             <Form {...editForm}>
               <form onSubmit={editForm.handleSubmit(onEdit)} className="space-y-6">
@@ -590,6 +570,7 @@ export default function Home() {
             </Form>
           </DialogContent>
         </Dialog>
+
         <Dialog open={isGenerating} onOpenChange={(open) => !open && setIsGenerating(false)}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
