@@ -46,9 +46,7 @@ export async function generateFeature(
     Scenario: First Scenario
       Given some context
       When an action occurs
-      Then there is an outcome
-
-    Ensure each scenario follows a high-level, outcome-oriented format with "Given, When, Then" steps.`;
+      Then there is an outcome`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -92,11 +90,11 @@ export async function getSuggestions(
       messages: [
         {
           role: "system",
-          content: "You are an expert in BDD (Behavior-Driven Development) and writing user stories. Provide brief, actionable suggestions to improve the feature story."
+          content: "You are an expert in BDD (Behavior-Driven Development) and writing user stories. Analyze the provided story and respond with a JSON object containing an array of suggestions for improvement. Format your response as: { \"suggestions\": [\"suggestion1\", \"suggestion2\", \"suggestion3\"] }"
         },
         {
           role: "user",
-          content: `Analyze this feature story and provide up to 3 brief suggestions to improve its clarity, completeness, and alignment with BDD best practices. The story: "${currentStory}"`
+          content: `Please analyze this feature story and provide up to 3 brief suggestions in JSON format to improve its clarity, completeness, and alignment with BDD best practices: "${currentStory}"`
         }
       ],
       temperature: 0.7,
@@ -104,7 +102,7 @@ export async function getSuggestions(
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    const result = JSON.parse(response.choices[0].message.content || "{}");
     return { suggestions: result.suggestions || [] };
   } catch (error: any) {
     console.error('Error getting suggestions:', error);
