@@ -62,7 +62,7 @@ export default function Home() {
     defaultValues: {
       title: "",
       story: "",
-      scenarioCount: 2,
+      scenarioCount: 1,
     },
   });
 
@@ -292,7 +292,7 @@ export default function Home() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {[1, 2, 3, 4, 5].map((num) => (
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                             <SelectItem key={num} value={num.toString()}>
                               {num}
                             </SelectItem>
@@ -512,7 +512,7 @@ export default function Home() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {[1, 2, 3, 4, 5].map((num) => (
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                             <SelectItem key={num} value={num.toString()}>
                               {num}
                             </SelectItem>
