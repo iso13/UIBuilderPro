@@ -9,20 +9,36 @@ export function useCollaboration() {
   let socket: WebSocket | null = null;
 
   const connect = useCallback(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    socket = new WebSocket(wsUrl);
+    // Use the current window location for WebSocket connection
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data) as WebSocketMessage;
-      // Handle incoming messages
-      console.log('Received message:', message);
-    };
+    try {
+      socket = new WebSocket(wsUrl);
 
-    socket.onclose = () => {
+      socket.onopen = () => {
+        console.log('WebSocket connection established');
+      };
+
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data) as WebSocketMessage;
+        console.log('Received message:', message);
+      };
+
+      socket.onclose = () => {
+        console.log('WebSocket connection closed, attempting to reconnect...');
+        // Attempt to reconnect after a delay
+        setTimeout(connect, 3000);
+      };
+
+      socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    } catch (error) {
+      console.error('Failed to establish WebSocket connection:', error);
       // Attempt to reconnect after a delay
       setTimeout(connect, 3000);
-    };
+    }
   }, []);
 
   const startEditing = useCallback((featureId: number) => {

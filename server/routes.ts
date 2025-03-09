@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer } from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 import { storage } from "./storage";
 import { generateFeature } from "./openai";
 import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema, type WebSocketMessage } from "@shared/schema";
@@ -80,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updatedFeature.scenarioCount
           );
 
-          feature = await storage.updateFeature(id, { 
+          feature = await storage.updateFeature(id, {
             generatedContent,
             manuallyEdited: false,
           });
