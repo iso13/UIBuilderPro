@@ -1,0 +1,83 @@
+import { NextResponse } from 'next/server';
+import fs from 'fs-extra';
+import path from 'path';
+import OpenAI from 'openai';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+});
+
+export async function POST(request: Request) {
+    try {
+        const { featureTitle, featureStory, scenarioCount } = await request.json();
+
+        if (!featureTitle || !featureStory || scenarioCount <= 0) {
+            return NextResponse.json({ error: 'Feature title, story, and a valid scenario count are required.' }, { status: 400 });
+        }
+
+        console.log('📥 Received request:', { featureTitle, featureStory, scenarioCount });
+
+        // Normalize feature title for tagging
+        const featureTag = `@${featureTitle
+            .split(/\s+/)
+            .map((word: string, index: number) => index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
+            .join('')}`;
+
+        // Generate scenarios dynamically using OpenAI
+        console.log('🤖 Generating scenarios with AI...');
+        const aiPrompt = `Generate a Cucumber BDD feature file for the feature titled "${featureTitle}" with ${scenarioCount} scenarios.
+        
+        Feature Story:
+        ${featureStory}
+
+        Guidelines for Scenario Generation:
+        - Write scenarios that describe the BUSINESS OUTCOME, not specific UI interactions
+        - Use declarative language that focuses on WHAT should happen, not HOW it happens
+        - Each scenario should represent a distinct business rule or acceptance criterion
+        - Avoid mentioning specific UI elements or technical implementation details
+        - Use clear, concise language that describes the expected system behavior
+        - Scenarios should be understandable by non-technical stakeholders
+
+        Example of Declarative vs Imperative:
+        Imperative: "When I click the Add User button and enter details"
+        Declarative: "When a new user is created with valid information"
+
+        Ensure each scenario follows a high-level, outcome-oriented format with "Given, When, Then" steps.`;
+
+        const aiResponse = await openai.chat.completions.create({
+            model: 'gpt-4',
+            messages: [{ role: 'user', content: aiPrompt }],
+            temperature: 0.3,
+            max_tokens: 1500
+        });
+
+        let featureContent = aiResponse.choices[0]?.message?.content || '';
+
+        // Ensure formatting is correct
+        featureContent = featureContent.replace(/```gherkin|```/g, '').trim();
+
+        console.log('✅ AI-generated feature file:', featureContent);
+
+        // Ensure feature tag is at the top and no duplicate feature title
+        if (!featureContent.startsWith(featureTag)) {
+            featureContent = `${featureTag}\n${featureContent}`;
+        }
+
+        // Save feature file
+        const featuresDir = path.join(process.cwd(), 'features');
+        await fs.ensureDir(featuresDir);
+        const featureFilePath = path.join(featuresDir, `${featureTitle.replace(/\s+/g, '')}.feature`);
+
+        await fs.writeFile(featureFilePath, featureContent);
+        console.log('✅ Feature file saved:', featureFilePath);
+
+        return NextResponse.json({ message: `Feature file created: ${featureFilePath}`, feature: featureContent });
+    } catch (error) {
+        console.error('❌ Error generating feature file:', error);
+        return NextResponse.json({ error: 'Failed to generate feature file.' }, { status: 500 });
+    }
+}

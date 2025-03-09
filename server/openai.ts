@@ -11,25 +11,58 @@ export async function generateFeature(
   scenarioCount: number,
 ): Promise<string> {
   try {
+    // Normalize feature title for tagging
+    const featureTag = `@${title
+      .split(/\s+/)
+      .map((word, index) => index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
+      .join('')}`;
+
+    const aiPrompt = `Generate a Cucumber BDD feature file for the feature titled "${title}" with ${scenarioCount} scenarios.
+
+    Feature Story:
+    ${story}
+
+    Guidelines for Scenario Generation:
+    - Write scenarios that describe the BUSINESS OUTCOME, not specific UI interactions
+    - Use declarative language that focuses on WHAT should happen, not HOW it happens
+    - Each scenario should represent a distinct business rule or acceptance criterion
+    - Avoid mentioning specific UI elements or technical implementation details
+    - Use clear, concise language that describes the expected system behavior
+    - Scenarios should be understandable by non-technical stakeholders
+
+    Example of Declarative vs Imperative:
+    Imperative: "When I click the Add User button and enter details"
+    Declarative: "When a new user is created with valid information"
+
+    Ensure each scenario follows a high-level, outcome-oriented format with "Given, When, Then" steps.`;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content:
-            "You are an expert in writing Cucumber features. Generate a feature file based on the given title, story and number of scenarios requested. Follow Gherkin syntax.",
+          content: "You are an expert in writing Cucumber features. Generate a feature file based on the given guidelines."
         },
         {
           role: "user",
-          content: `Generate a Cucumber feature with:
-Title: ${title}
-Story: ${story}
-Number of scenarios: ${scenarioCount}`,
+          content: aiPrompt
         },
       ],
+      temperature: 0.3,
+      max_tokens: 1500
     });
 
-    return response.choices[0].message.content || "";
+    let featureContent = response.choices[0].message.content || "";
+
+    // Ensure formatting is correct
+    featureContent = featureContent.replace(/```gherkin|```/g, "").trim();
+
+    // Ensure feature tag is at the top
+    if (!featureContent.startsWith(featureTag)) {
+      featureContent = `${featureTag}\n${featureContent}`;
+    }
+
+    return featureContent;
   } catch (error: any) {
     throw new Error(`Failed to generate feature: ${error.message}`);
   }
