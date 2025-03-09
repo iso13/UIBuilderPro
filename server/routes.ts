@@ -66,16 +66,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      // Check if scenario count has changed and feature wasn't manually edited
-      const scenarioCountChanged = data.scenarioCount && data.scenarioCount !== currentFeature.scenarioCount;
-      const shouldRegenerateContent = scenarioCountChanged && !currentFeature.manuallyEdited;
+      // If scenarioCount changed, always regenerate
+      if (data.scenarioCount && data.scenarioCount !== currentFeature.scenarioCount) {
+        console.log(`Regenerating content for feature ${id} with ${data.scenarioCount} scenarios`);
 
-      if (shouldRegenerateContent) {
-        // Regenerate content with new scenario count
         const generatedContent = await generateFeature(
-          currentFeature.title,
-          currentFeature.story,
-          data.scenarioCount!
+          data.title || currentFeature.title,
+          data.story || currentFeature.story,
+          data.scenarioCount
         );
 
         const feature = await storage.updateFeature(id, {
@@ -83,16 +81,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           generatedContent,
           manuallyEdited: false,
         });
-        res.json(feature);
-      } else {
-        // Regular update without regenerating content
-        const feature = await storage.updateFeature(id, {
-          ...data,
-          manuallyEdited: data.generatedContent ? true : currentFeature.manuallyEdited,
-        });
-        res.json(feature);
+
+        return res.json(feature);
       }
+
+      // Regular update without regenerating content
+      const feature = await storage.updateFeature(id, {
+        ...data,
+        manuallyEdited: data.generatedContent ? true : currentFeature.manuallyEdited,
+      });
+
+      res.json(feature);
     } catch (error: any) {
+      console.error('Error updating feature:', error);
       res.status(400).json({ message: error.message });
     }
   });
