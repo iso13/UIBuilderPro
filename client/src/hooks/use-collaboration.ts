@@ -9,11 +9,14 @@ export function useCollaboration() {
   let socket: WebSocket | null = null;
 
   const connect = useCallback(() => {
-    // Use the current window location for WebSocket connection
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
-
     try {
+      // Get the current protocol and host from the window location
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = window.location.host;
+      const wsUrl = `${wsProtocol}//${wsHost}/ws`;
+
+      console.log('Attempting WebSocket connection to:', wsUrl);
+
       socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {
@@ -25,8 +28,8 @@ export function useCollaboration() {
         console.log('Received message:', message);
       };
 
-      socket.onclose = () => {
-        console.log('WebSocket connection closed, attempting to reconnect...');
+      socket.onclose = (event) => {
+        console.log('WebSocket connection closed:', event.code, event.reason);
         // Attempt to reconnect after a delay
         setTimeout(connect, 3000);
       };
