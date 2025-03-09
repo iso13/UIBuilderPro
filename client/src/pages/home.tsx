@@ -41,6 +41,8 @@ import { ProgressSteps, type Step } from "@/components/ui/progress-steps";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiRequest } from "@/lib/queryClient";
 import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
+import * as z from 'zod';
+import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
 
 export default function Home() {
   const { toast } = useToast();
@@ -64,7 +66,23 @@ export default function Home() {
       story: "",
       scenarioCount: 1,
     },
+    mode: "onChange",
   });
+
+  const title = form.watch("title");
+  const { isDuplicate, isChecking } = useCheckDuplicateTitle(title);
+
+  // Update form validation when duplicate status changes
+  useEffect(() => {
+    if (isDuplicate) {
+      form.setError("title", {
+        type: "manual",
+        message: "A feature with this title already exists. Please use a different title."
+      });
+    } else {
+      form.clearErrors("title");
+    }
+  }, [isDuplicate, form]);
 
   const { data: features = [] } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
@@ -262,7 +280,18 @@ export default function Home() {
                     <FormItem>
                       <FormLabel>Feature Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter feature title" {...field} />
+                        <div className="relative">
+                          <Input
+                            placeholder="Enter feature title"
+                            {...field}
+                            className={isDuplicate ? "border-destructive" : ""}
+                          />
+                          {isChecking && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                              <LoadingSpinner />
+                            </div>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
