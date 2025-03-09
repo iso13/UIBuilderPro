@@ -83,10 +83,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="title"
@@ -94,10 +91,7 @@ export default function Home() {
                     <FormItem>
                       <FormLabel>Feature Title</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Enter feature title"
-                          {...field}
-                        />
+                        <Input placeholder="Enter feature title" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -129,9 +123,7 @@ export default function Home() {
                     <FormItem>
                       <FormLabel>Number of Scenarios</FormLabel>
                       <Select
-                        onValueChange={(value) =>
-                          field.onChange(parseInt(value, 10))
-                        }
+                        onValueChange={(value) => field.onChange(parseInt(value, 10))}
                         defaultValue={field.value.toString()}
                       >
                         <FormControl>
@@ -141,10 +133,7 @@ export default function Home() {
                         </FormControl>
                         <SelectContent>
                           {[1, 2, 3, 4, 5].map((num) => (
-                            <SelectItem
-                              key={num}
-                              value={num.toString()}
-                            >
+                            <SelectItem key={num} value={num.toString()}>
                               {num}
                             </SelectItem>
                           ))}

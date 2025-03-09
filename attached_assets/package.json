@@ -1,0 +1,49 @@
+{
+  "name": "cucumber-feature-gen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:cucumber": "cucumber-js src/features/**/*.feature --require-module ts-node/register --require src/steps/**/*.ts",
+    "lint": "next lint",
+    "clean": "rm -rf .next node_modules package-lock.json"
+  },
+  "dependencies": {
+    "@cucumber/cucumber": "^11.2.0",
+    "@playwright/test": "^1.42.0",
+    "@shadcn/ui": "^0.0.4",
+    "@tailwindcss/postcss": "^4.0.9",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.7",
+    "fs-extra": "^11.1.1",
+    "lucide-react": "^0.479.0",
+    "openai": "^4.85.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "shadcn-ui": "^0.9.5",
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/next": "^9.0.0",
+    "@types/node": "^20.17.19",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@types/tailwindcss": "^3.0.11",
+    "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@typescript-eslint/parser": "^8.25.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.21.0",
+    "eslint-config-next": "^15.1.7",
+    "next": "^15.1.7",
+    "postcss": "^8.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
