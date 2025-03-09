@@ -66,18 +66,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      // If scenarioCount changed, always regenerate
-      if (data.scenarioCount && data.scenarioCount !== currentFeature.scenarioCount) {
-        console.log(`Regenerating content for feature ${id} with ${data.scenarioCount} scenarios`);
+      // If scenarioCount changed or title changed, always regenerate
+      if ((data.scenarioCount && data.scenarioCount !== currentFeature.scenarioCount) ||
+          (data.title && data.title !== currentFeature.title)) {
+        console.log(`Regenerating content for feature ${id} with title: ${data.title || currentFeature.title} and ${data.scenarioCount || currentFeature.scenarioCount} scenarios`);
 
+        // First update the feature's basic info
+        await storage.updateFeature(id, {
+          title: data.title,
+          story: data.story,
+          scenarioCount: data.scenarioCount,
+        });
+
+        // Then regenerate content with updated information
         const generatedContent = await generateFeature(
           data.title || currentFeature.title,
           data.story || currentFeature.story,
-          data.scenarioCount
+          data.scenarioCount || currentFeature.scenarioCount
         );
 
         const feature = await storage.updateFeature(id, {
-          ...data,
           generatedContent,
           manuallyEdited: false,
         });
