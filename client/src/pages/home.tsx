@@ -395,7 +395,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className={`relative border rounded-lg p-4 pb-12 cursor-pointer transition-colors ${
+                    className={`relative border rounded-lg p-4 cursor-pointer transition-colors ${
                       currentFeature?.id === feature.id
                         ? "border-primary bg-primary/5"
                         : "hover:border-primary/50"
