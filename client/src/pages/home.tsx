@@ -1,3 +1,20 @@
+function updateFeatureContent(content: string, newTitle: string): string {
+  // Create the new feature tag
+  const featureTag = `@${newTitle
+    .split(/\s+/)
+    .map((word, index) => index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
+    .join('')}`;
+
+  // Update the content
+  let updatedContent = content
+    // Replace old feature tag
+    .replace(/@[\w]+\n/, `${featureTag}\n`)
+    // Replace Feature: line
+    .replace(/Feature:.*\n/, `Feature: ${newTitle}\n`);
+
+  return updatedContent;
+}
+
 import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -410,7 +427,19 @@ export default function Home() {
                     <FormItem>
                       <FormLabel>Feature Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter feature title" {...field} />
+                        <Input 
+                          placeholder="Enter feature title" 
+                          {...field} 
+                          onChange={(e) => {
+                            field.onChange(e.target.value);
+                            const currentContent = editForm.getValues("generatedContent");
+                            if (currentContent) {
+                              const updatedContent = updateFeatureContent(currentContent, e.target.value);
+                              editForm.setValue("generatedContent", updatedContent);
+                              setIsContentEdited(true);
+                            }
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
