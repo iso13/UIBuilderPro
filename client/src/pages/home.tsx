@@ -284,7 +284,7 @@ export default function Home() {
                           <Input
                             placeholder="Enter feature title"
                             {...field}
-                            className={`${isDuplicate ? "border-red-400 dark:border-red-400 focus:border-red-400 dark:focus:border-red-400" : ""}`}
+                            className={`${isDuplicate ? "border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500" : ""}`}
                           />
                           {isChecking && (
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -293,7 +293,7 @@ export default function Home() {
                           )}
                         </div>
                       </FormControl>
-                      <div className={`${isDuplicate ? "text-red-400 dark:text-red-400" : ""}`}>
+                      <div className={`${isDuplicate ? "text-red-500 dark:text-red-500" : ""}`}>
                         <FormMessage />
                       </div>
                     </FormItem>
