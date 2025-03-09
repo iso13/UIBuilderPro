@@ -1,20 +1,3 @@
-function updateFeatureContent(content: string, newTitle: string): string {
-  // Create the new feature tag
-  const featureTag = `@${newTitle
-    .split(/\s+/)
-    .map((word, index) => index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
-    .join('')}`;
-
-  // Update the content
-  let updatedContent = content
-    // Replace old feature tag
-    .replace(/@[\w]+\n/, `${featureTag}\n`)
-    // Replace Feature: line
-    .replace(/Feature:.*\n/, `Feature: ${newTitle}\n`);
-
-  return updatedContent;
-}
-
 import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -56,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ProgressSteps, type Step } from "@/components/ui/progress-steps";
 
 export default function Home() {
   const { toast } = useToast();
@@ -65,6 +49,12 @@ export default function Home() {
   const [sortOption, setSortOption] = useState<SortOption>("date");
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [isContentEdited, setIsContentEdited] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationSteps, setGenerationSteps] = useState<Step[]>([
+    { id: "analyzing", label: "Analyzing Input", status: "waiting" },
+    { id: "generating", label: "Generating Scenarios", status: "waiting" },
+    { id: "finalizing", label: "Finalizing Content", status: "waiting" },
+  ]);
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -103,8 +93,36 @@ export default function Home() {
 
   const generateMutation = useMutation({
     mutationFn: async (data: InsertFeature) => {
+      setIsGenerating(true);
+
+      // Step 1: Analyzing
+      setGenerationSteps(steps => steps.map(step =>
+        step.id === "analyzing" ? { ...step, status: "current" } : step
+      ));
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setGenerationSteps(steps => steps.map(step =>
+        step.id === "analyzing" ? { ...step, status: "completed" } :
+        step.id === "generating" ? { ...step, status: "current" } : step
+      ));
+
+      // Step 2: Generating
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setGenerationSteps(steps => steps.map(step =>
+        step.id === "generating" ? { ...step, status: "completed" } :
+        step.id === "finalizing" ? { ...step, status: "current" } : step
+      ));
+
+      // Step 3: Making the actual API call
       const res = await apiRequest("POST", "/api/features/generate", data);
-      return res.json();
+      const result = await res.json();
+
+      // Step 4: Finalizing
+      setGenerationSteps(steps => steps.map(step =>
+        step.id === "finalizing" ? { ...step, status: "completed" } : step
+      ));
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      return result;
     },
     onSuccess: (data) => {
       setCurrentFeature(data);
@@ -115,6 +133,9 @@ export default function Home() {
         description: "Feature generated successfully",
         duration: 3000,
       });
+      // Reset states
+      setIsGenerating(false);
+      setGenerationSteps(steps => steps.map(step => ({ ...step, status: "waiting" })));
     },
     onError: (error) => {
       toast({
@@ -123,6 +144,9 @@ export default function Home() {
         variant: "destructive",
         duration: 3000,
       });
+      // Reset states
+      setIsGenerating(false);
+      setGenerationSteps(steps => steps.map(step => ({ ...step, status: "waiting" })));
     },
   });
 
@@ -545,7 +569,34 @@ export default function Home() {
             </Form>
           </DialogContent>
         </Dialog>
+        <Dialog open={isGenerating} onOpenChange={(open) => !open && setIsGenerating(false)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Generating Feature</DialogTitle>
+            </DialogHeader>
+            <div className="py-6">
+              <ProgressSteps steps={generationSteps} />
+            </div>
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </div>
   );
+}
+
+function updateFeatureContent(content: string, newTitle: string): string {
+  // Create the new feature tag
+  const featureTag = `@${newTitle
+    .split(/\s+/)
+    .map((word, index) => index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
+    .join('')}`;
+
+  // Update the content
+  let updatedContent = content
+    // Replace old feature tag
+    .replace(/@[\w]+\n/, `${featureTag}\n`)
+    // Replace Feature: line
+    .replace(/Feature:.*\n/, `Feature: ${newTitle}\n`);
+
+  return updatedContent;
 }
