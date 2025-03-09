@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProgressSteps, type Step } from "@/components/ui/progress-steps";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Home() {
   const { toast } = useToast();
@@ -402,7 +403,16 @@ export default function Home() {
                     }`}
                     onClick={() => setCurrentFeature(feature)}
                   >
-                    <h3 className="text-lg font-semibold truncate pr-2">{feature.title}</h3>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <h3 className="text-lg font-semibold truncate pr-2">{feature.title}</h3>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{feature.title}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {feature.story}
                     </p>
