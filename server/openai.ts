@@ -29,10 +29,22 @@ export async function generateFeature(
     - Avoid mentioning specific UI elements or technical implementation details
     - Use clear, concise language that describes the expected system behavior
     - Scenarios should be understandable by non-technical stakeholders
+    - IMPORTANT: There should be no empty line between Feature: Title and the story
 
     Example of Declarative vs Imperative:
     Imperative: "When I click the Add User button and enter details"
     Declarative: "When a new user is created with valid information"
+
+    Example Format:
+    @featureTag
+    Feature: Feature Title
+    As a user, I want to do something
+    So that I can achieve a goal
+
+    Scenario: First Scenario
+      Given some context
+      When an action occurs
+      Then there is an outcome
 
     Ensure each scenario follows a high-level, outcome-oriented format with "Given, When, Then" steps.`;
 
@@ -57,7 +69,10 @@ export async function generateFeature(
     // Ensure formatting is correct
     featureContent = featureContent.replace(/```gherkin|```/g, "").trim();
 
-    // Ensure feature tag is at the top
+    // Remove any double newlines between Feature: and the story
+    featureContent = featureContent.replace(/Feature:([^\n]+)\n\n/g, 'Feature:$1\n');
+
+    // Ensure feature tag is at the top and no duplicate feature title
     if (!featureContent.startsWith(featureTag)) {
       featureContent = `${featureTag}\n${featureContent}`;
     }
