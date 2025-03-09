@@ -8,6 +8,7 @@ export const features = pgTable("features", {
   story: text("story").notNull(),
   scenarioCount: integer("scenario_count").notNull(),
   generatedContent: text("generated_content"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const analytics = pgTable("analytics", {
@@ -43,3 +44,6 @@ export type InsertFeature = z.infer<typeof insertFeatureSchema>;
 export type Feature = typeof features.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
 export type Analytics = typeof analytics.$inferSelect;
+
+// Sorting options
+export type SortOption = "title" | "date";

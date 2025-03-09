@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2 } from "lucide-react";
+import { Wand2, Search, SortAsc } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { apiRequest } from "@/lib/queryClient";
-import { insertFeatureSchema, type InsertFeature, type Feature } from "@shared/schema";
+import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentFeature, setCurrentFeature] = useState<Feature | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("date");
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -46,6 +54,28 @@ export default function Home() {
     queryKey: ["/api/features"],
   });
 
+  const filteredAndSortedFeatures = useMemo(() => {
+    let result = [...features];
+
+    // Apply search filter
+    if (searchQuery) {
+      result = result.filter(feature =>
+        feature.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      if (sortOption === "title") {
+        return a.title.localeCompare(b.title);
+      } else {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+
+    return result;
+  }, [features, searchQuery, sortOption]);
+
   const generateMutation = useMutation({
     mutationFn: async (data: InsertFeature) => {
       const res = await apiRequest("POST", "/api/features/generate", data);
@@ -58,7 +88,7 @@ export default function Home() {
       toast({
         title: "Success",
         description: "Feature generated successfully",
-        duration: 3000, // Auto dismiss after 3 seconds
+        duration: 3000,
       });
     },
     onError: (error) => {
@@ -66,7 +96,7 @@ export default function Home() {
         title: "Error",
         description: error.message,
         variant: "destructive",
-        duration: 3000, // Auto dismiss after 3 seconds
+        duration: 3000,
       });
     },
   });
@@ -77,12 +107,12 @@ export default function Home() {
 
   return (
     <div className="mx-auto px-4 sm:px-6 lg:px-8 w-full">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-8 py-8"
       >
-        <motion.div 
+        <motion.div
           className="text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -212,21 +242,52 @@ export default function Home() {
         )}
 
         <Card>
-          <CardHeader>
-            <CardTitle>Generated Features</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Generated Features</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {filteredAndSortedFeatures.length} feature{filteredAndSortedFeatures.length !== 1 ? 's' : ''} found
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search features..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 w-[200px]"
+                />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <SortAsc className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSortOption("title")}>
+                    Sort by Title
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortOption("date")}>
+                    Sort by Date
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <AnimatePresence>
-                {features.map((feature: Feature) => (
+                {filteredAndSortedFeatures.map((feature: Feature) => (
                   <motion.div
                     key={feature.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                      currentFeature?.id === feature.id 
-                        ? "border-primary bg-primary/5" 
+                      currentFeature?.id === feature.id
+                        ? "border-primary bg-primary/5"
                         : "hover:border-primary/50"
                     }`}
                     onClick={() => setCurrentFeature(feature)}
@@ -235,13 +296,16 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {feature.story}
                     </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(feature.createdAt).toLocaleDateString()}
+                    </p>
                   </motion.div>
                 ))}
               </AnimatePresence>
 
-              {features.length === 0 && (
+              {filteredAndSortedFeatures.length === 0 && (
                 <div className="text-center text-muted-foreground col-span-full">
-                  No features generated yet. Try generating one above!
+                  {searchQuery ? "No features found matching your search." : "No features generated yet. Try generating one above!"}
                 </div>
               )}
             </div>
