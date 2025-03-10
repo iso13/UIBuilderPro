@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "EXPORTED";
+export type FeatureStatus = "DRAFT" | "APPROVED" | "REJECTED" | "EXPORTED";
 
 export const features = pgTable("features", {
   id: serial("id").primaryKey(),
@@ -36,12 +36,12 @@ export const insertFeatureSchema = createInsertSchema(features)
     story: z.string().min(10, "Story must be at least 10 characters"),
     scenarioCount: z.number().min(1).max(10),
     generatedContent: z.string().optional(),
-    status: z.enum(["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "EXPORTED"]).default("DRAFT"),
+    status: z.enum(["DRAFT", "APPROVED", "REJECTED", "EXPORTED"]).default("DRAFT"),
   });
 
 export const updateFeatureSchema = insertFeatureSchema.partial().extend({
   generatedContent: z.string().min(1, "Feature content is required"),
-  status: z.enum(["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "EXPORTED"]).optional(),
+  status: z.enum(["DRAFT", "APPROVED", "REJECTED", "EXPORTED"]).optional(),
 });
 
 export const insertAnalyticsSchema = createInsertSchema(analytics)

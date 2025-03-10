@@ -274,53 +274,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/features/:id/export", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const feature = await storage.getFeature(id);
-
-      if (!feature) {
-        return res.status(404).json({ message: "Feature not found" });
-      }
-
-      if (feature.status !== "APPROVED") {
-        return res.status(400).json({ 
-          message: "Only approved features can be exported" 
-        });
-      }
-
-      if (!feature.generatedContent) {
-        return res.status(400).json({ message: "Feature has no content to export" });
-      }
-
-      // Create features directory if it doesn't exist
-      const featuresDir = path.join(process.cwd(), "src", "features");
-      await fs.ensureDir(featuresDir);
-
-      // Generate safe filename from feature title
-      const safeFilename = feature.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-
-      const featureFilePath = path.join(featuresDir, `${safeFilename}.feature`);
-
-      // Write feature content to file
-      await fs.writeFile(featureFilePath, feature.generatedContent);
-
-      // Update status to EXPORTED
-      const updatedFeature = await storage.updateFeature(id, { status: "EXPORTED" });
-
-      res.json({
-        message: "Feature exported successfully",
-        filePath: featureFilePath,
-        feature: updatedFeature
-      });
-    } catch (error: any) {
-      console.error("Error exporting feature:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

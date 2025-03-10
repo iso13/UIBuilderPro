@@ -50,7 +50,7 @@ import { Badge } from "@/components/ui/badge";
 
 
 type FeatureFilter = "all" | "active" | "deleted";
-type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "EXPORTED";
+type FeatureStatus = "DRAFT" | "APPROVED" | "REJECTED" | "EXPORTED";
 type StatusAction = {
   nextStatus: FeatureStatus;
   label: string;
@@ -60,12 +60,6 @@ type StatusAction = {
 function getStatusActions(currentStatus: FeatureStatus): StatusAction[] {
   switch (currentStatus) {
     case "DRAFT":
-      return [{
-        nextStatus: "IN_REVIEW",
-        label: "Submit for Review",
-        icon: <ClipboardList className="h-4 w-4" />
-      }];
-    case "IN_REVIEW":
       return [
         {
           nextStatus: "APPROVED",
@@ -86,9 +80,9 @@ function getStatusActions(currentStatus: FeatureStatus): StatusAction[] {
       }];
     case "APPROVED":
       return [{
-        nextStatus: "IN_REVIEW",
-        label: "Revoke Approval",
-        icon: <RefreshCw className="h-4 w-4" />
+        nextStatus: "EXPORTED",
+        label: "Export Feature",
+        icon: <Download className="h-4 w-4" />
       }];
     case "EXPORTED":
       return [{
@@ -105,8 +99,6 @@ function getStatusColor(status: FeatureStatus): string {
   switch (status) {
     case "DRAFT":
       return "bg-gray-500";
-    case "IN_REVIEW":
-      return "bg-yellow-500";
     case "APPROVED":
       return "bg-green-500";
     case "REJECTED":
@@ -984,7 +976,7 @@ function ComplexityAnalysis({ featureId }: { featureId: number }) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+                    <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
         ))}
       </div>
     );
