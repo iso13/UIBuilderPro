@@ -149,7 +149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
-      res.json(feature);
+
+      // When restoring, reset status to DRAFT
+      const updatedFeature = await storage.updateFeature(id, { 
+        status: "DRAFT" 
+      });
+
+      res.json(updatedFeature);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -237,6 +243,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const feature = await storage.getFeature(id);
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
+      }
+
+      // Prevent status changes for archived features
+      if (feature.deleted) {
+        return res.status(400).json({ 
+          message: "Cannot change status of archived features" 
+        });
       }
 
       // Add validation rules for status transitions
