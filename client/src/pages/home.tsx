@@ -680,50 +680,7 @@ export default function Home() {
                             </Tooltip>
                           </TooltipProvider>
                         ))}
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const res = await apiRequest(
-                                      "POST",
-                                      `/api/features/${feature.id}/export`
-                                    );
-                                    if (!res.ok) {
-                                      throw new Error("Failed to export feature");
-                                    }
-                                    const data = await res.json();
-                                    toast({
-                                      title: "Success",
-                                      description: "Feature exported successfully",
-                                      duration: 3000,
-                                    });
-                                  } catch (error: any) {
-                                    toast({
-                                      title: "Export Failed",
-                                      description: error.message,
-                                      variant: "destructive",
-                                      duration: 5000,
-                                    });
-                                  }
-                                }}
-                                disabled={feature.status !== "APPROVED"}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {feature.status === "APPROVED"
-                                ? "Export Feature"
-                                : "Feature must be approved before export"}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        {/*Removed redundant export button here*/}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
