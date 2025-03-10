@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,6 @@ import { ScenarioComplexity } from "@/components/ui/scenario-complexity";
 import { FeatureGenerationLoader } from "@/components/ui/feature-generation-loader";
 
 type FeatureFilter = "all" | "active" | "deleted";
-type FeatureStatus = 'active' | 'deleted';
 
 export default function Home() {
   const { toast } = useToast();
@@ -295,37 +294,6 @@ export default function Home() {
     if (!editingFeature) return;
     editMutation.mutate({ id: editingFeature.id, ...data });
   };
-
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: FeatureStatus }) => {
-      const res = await apiRequest(
-        "POST",
-        `/api/features/${id}/status`,
-        { status }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message);
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-      toast({
-        title: "Success",
-        description: "Feature status updated successfully",
-        duration: 3000,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-        duration: 5000,
-      });
-    },
-  });
 
 
   return (
