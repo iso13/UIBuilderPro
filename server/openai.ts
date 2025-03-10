@@ -192,7 +192,7 @@ async function analyzeFeatureComplexity(content: string): Promise<FeatureComplex
       messages: [
         {
           role: "system",
-          content: "You are an expert in analyzing Cucumber feature complexity. Analyze the given feature file and provide complexity scores and insights."
+          content: "You are an expert in analyzing Cucumber feature complexity. Analyze the given feature file and provide complexity scores and insights. Focus on understanding the automated scenarios rather than suggesting manual changes."
         },
         {
           role: "user",
@@ -204,6 +204,12 @@ async function analyzeFeatureComplexity(content: string): Promise<FeatureComplex
 
           Feature content:
           ${content}
+
+          Provide recommendations that focus on:
+          - Understanding complex patterns in the scenarios
+          - Testing considerations for complex scenarios
+          - Performance implications of data-heavy scenarios
+          - Integration points that need careful testing
 
           Respond in JSON format with:
           - overallComplexity: number 1-10
@@ -218,7 +224,7 @@ async function analyzeFeatureComplexity(content: string): Promise<FeatureComplex
               },
               explanation: string
             }
-          - recommendations: array of improvement suggestions`
+          - recommendations: array of analysis insights (do not suggest manual modifications)`
         }
       ],
       response_format: { type: "json_object" },
