@@ -471,23 +471,6 @@ export default function Home() {
                 </div>
                 {/* Added complexity analysis section */}
                 <div className="mt-6 border-t pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
-                      <Activity className="h-4 w-4" />
-                      Scenario Complexity Analysis
-                    </h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        queryClient.invalidateQueries({
-                          queryKey: ['/api/features/complexity', currentFeature.id]
-                        });
-                      }}
-                    >
-                      Refresh Analysis
-                    </Button>
-                  </div>
                   <ComplexityAnalysis featureId={currentFeature.id} />
                 </div>
               </CardContent>
