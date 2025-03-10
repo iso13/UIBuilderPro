@@ -1,10 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateFeature } from "./openai";
+import { generateFeature, analyzeFeature, suggestTitle } from "./openai";
 import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema } from "@shared/schema";
-import { analyzeFeature, suggestTitle } from "./ai"; // Assuming these functions are defined elsewhere
-
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
