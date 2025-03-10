@@ -140,7 +140,7 @@ async function analyzeFeature(content: string, currentTitle: string): Promise<Fe
       temperature: 0.3
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    const result = JSON.parse(response.choices[0].message.content || "{}");
     return {
       quality_score: Math.min(100, Math.max(0, result.quality_score)),
       suggestions: result.suggestions || [],
@@ -178,7 +178,7 @@ async function suggestTitle(story: string): Promise<string[]> {
       temperature: 0.7
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    const result = JSON.parse(response.choices[0].message.content || "{}");
     return result.titles || [];
   } catch (error: any) {
     throw new Error(`Failed to suggest titles: ${error.message}`);

@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateFeature, analyzeFeature, suggestTitle } from "./openai";
-import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema } from "@shared/schema";
+import { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity } from "./openai";
+import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
