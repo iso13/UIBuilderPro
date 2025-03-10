@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -560,6 +560,47 @@ export default function Home() {
                         {new Date(feature.createdAt).toLocaleDateString()}
                       </p>
                       <div className="flex gap-1">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    const res = await apiRequest(
+                                      "POST",
+                                      `/api/features/${feature.id}/export`
+                                    );
+                                    if (!res.ok) {
+                                      throw new Error("Failed to export feature");
+                                    }
+                                    const data = await res.json();
+                                    toast({
+                                      title: "Success",
+                                      description: "Feature exported successfully",
+                                      duration: 3000,
+                                    });
+                                  } catch (error: any) {
+                                    toast({
+                                      title: "Export Failed",
+                                      description: error.message,
+                                      variant: "destructive",
+                                      duration: 5000,
+                                    });
+                                  }
+                                }}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Export Feature
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>

@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity } from "./openai";
 import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
+import fs from "fs-extra";
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
@@ -217,6 +219,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const titles = await suggestTitle(story);
       res.json({ titles });
     } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/:id/export", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const feature = await storage.getFeature(id);
+
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+
+      if (!feature.generatedContent) {
+        return res.status(400).json({ message: "Feature has no content to export" });
+      }
+
+      // Create features directory if it doesn't exist
+      const featuresDir = path.join(process.cwd(), "src", "features");
+      await fs.ensureDir(featuresDir);
+
+      // Generate safe filename from feature title
+      const safeFilename = feature.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const featureFilePath = path.join(featuresDir, `${safeFilename}.feature`);
+
+      // Write feature content to file
+      await fs.writeFile(featureFilePath, feature.generatedContent);
+
+      res.json({
+        message: "Feature exported successfully",
+        filePath: featureFilePath
+      });
+    } catch (error: any) {
+      console.error("Error exporting feature:", error);
       res.status(500).json({ message: error.message });
     }
   });
