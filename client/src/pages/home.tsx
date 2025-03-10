@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption,
 import * as z from 'zod';
 import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
 import { CucumberGuide } from "@/components/ui/cucumber-guide";
+import { ScenarioComplexity } from "@/components/ui/scenario-complexity";
+import { ArrowRight } from "lucide-react";
 
 
 type FeatureFilter = "all" | "active" | "deleted";
@@ -467,6 +469,27 @@ export default function Home() {
                     {currentFeature.generatedContent}
                   </pre>
                 </div>
+                {/* Added complexity analysis section */}
+                <div className="mt-6 border-t pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Scenario Complexity Analysis
+                    </h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        queryClient.invalidateQueries({
+                          queryKey: ['/api/features/complexity', currentFeature.id]
+                        });
+                      }}
+                    >
+                      Refresh Analysis
+                    </Button>
+                  </div>
+                  <ComplexityAnalysis featureId={currentFeature.id} />
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -785,4 +808,71 @@ function updateFeatureContent(content: string, newTitle: string): string {
     .replace(/Feature:.*\n/, `Feature: ${newTitle}\n`);
 
   return updatedContent;
+}
+
+function ComplexityAnalysis({ featureId }: { featureId: number }) {
+  const { data: complexity, isLoading } = useQuery({
+    queryKey: ['/api/features/complexity', featureId],
+    queryFn: async () => {
+      const res = await apiRequest(
+        'POST',
+        `/api/features/${featureId}/complexity`
+      );
+      if (!res.ok) {
+        throw new Error('Failed to analyze complexity');
+      }
+      return res.json();
+    }
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!complexity) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {complexity.scenarios.map((scenario: {
+          name: string;
+          complexity: number;
+          factors: {
+            stepCount: number;
+            dataDependencies: number;
+            conditionalLogic: number;
+            technicalDifficulty: number;
+          };
+          explanation: string;
+        }) => (
+          <ScenarioComplexity
+            key={scenario.name}
+            name={scenario.name}
+            complexity={scenario.complexity}
+            factors={scenario.factors}
+            explanation={scenario.explanation}
+          />
+        ))}
+      </div>
+      {complexity.recommendations && complexity.recommendations.length > 0 && (
+        <div className="mt-4 p-4 bg-muted rounded-lg">
+          <h5 className="font-medium mb-2">Recommendations</h5>
+          <ul className="space-y-2">
+            {complexity.recommendations.map((rec: string, index: number) => (
+              <li key={index} className="text-sm text-muted-foreground flex items-center gap-2">
+                <ArrowRight className="h-4 w-4 shrink-0" />
+                {rec}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }

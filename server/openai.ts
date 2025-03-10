@@ -5,7 +5,25 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function generateFeature(
+interface ScenarioComplexity {
+  name: string;
+  complexity: number; // 1-10
+  factors: {
+    stepCount: number;
+    dataDependencies: number;
+    conditionalLogic: number;
+    technicalDifficulty: number;
+  };
+  explanation: string;
+}
+
+interface FeatureComplexity {
+  overallComplexity: number; // 1-10
+  scenarios: ScenarioComplexity[];
+  recommendations: string[];
+}
+
+async function generateFeature(
   title: string,
   story: string,
   scenarioCount: number,
@@ -32,7 +50,7 @@ export async function generateFeature(
     - Scenarios should be understandable by non-technical stakeholders
     - IMPORTANT: Use a Background section for Given steps that are common across all scenarios
     - IMPORTANT: There should be no empty line between Feature: Title and the story
-    - IMPORTANT: Include exactly ONE tag at the top of the feature file
+    - IMPORTANT: Include exactly one tag at the top of the feature file
 
     Example of Declarative vs Imperative:
     Imperative: "When I click the Add User button and enter details"
@@ -91,7 +109,7 @@ interface FeatureAnalysis {
   improved_title?: string;
 }
 
-export async function analyzeFeature(content: string, currentTitle: string): Promise<FeatureAnalysis> {
+async function analyzeFeature(content: string, currentTitle: string): Promise<FeatureAnalysis> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -133,7 +151,7 @@ export async function analyzeFeature(content: string, currentTitle: string): Pro
   }
 }
 
-export async function suggestTitle(story: string): Promise<string[]> {
+async function suggestTitle(story: string): Promise<string[]> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -166,3 +184,67 @@ export async function suggestTitle(story: string): Promise<string[]> {
     throw new Error(`Failed to suggest titles: ${error.message}`);
   }
 }
+
+async function analyzeFeatureComplexity(content: string): Promise<FeatureComplexity> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert in analyzing Cucumber feature complexity. Analyze the given feature file and provide complexity scores and insights."
+        },
+        {
+          role: "user",
+          content: `Analyze this Cucumber feature's complexity. For each scenario, consider:
+          1. Number of steps
+          2. Data dependencies (parameters, tables, etc.)
+          3. Conditional logic (But, And, etc.)
+          4. Technical implementation difficulty
+
+          Feature content:
+          ${content}
+
+          Respond in JSON format with:
+          - overallComplexity: number 1-10
+          - scenarios: array of {
+              name: string,
+              complexity: number 1-10,
+              factors: {
+                stepCount: number,
+                dataDependencies: number,
+                conditionalLogic: number,
+                technicalDifficulty: number
+              },
+              explanation: string
+            }
+          - recommendations: array of improvement suggestions`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+
+    return {
+      overallComplexity: Math.min(10, Math.max(1, result.overallComplexity || 1)),
+      scenarios: (result.scenarios || []).map((scenario: any) => ({
+        name: scenario.name || "Unnamed Scenario",
+        complexity: Math.min(10, Math.max(1, scenario.complexity || 1)),
+        factors: {
+          stepCount: scenario.factors?.stepCount || 0,
+          dataDependencies: scenario.factors?.dataDependencies || 0,
+          conditionalLogic: scenario.factors?.conditionalLogic || 0,
+          technicalDifficulty: scenario.factors?.technicalDifficulty || 0
+        },
+        explanation: scenario.explanation || ""
+      })),
+      recommendations: result.recommendations || []
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to analyze feature complexity: ${error.message}`);
+  }
+}
+
+export { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity };
