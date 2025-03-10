@@ -43,6 +43,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
 import * as z from 'zod';
 import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
+import { useSuggestions } from "@/hooks/use-suggestions";
+import { SuggestionsDisplay } from "@/components/ui/suggestions-display";
 
 type FeatureFilter = "all" | "active" | "deleted";
 
@@ -74,6 +76,8 @@ export default function Home() {
 
   const title = form.watch("title");
   const { isDuplicate, isChecking } = useCheckDuplicateTitle(title);
+  const story = form.watch("story");
+  const { suggestions, isLoading: isSuggestionsLoading } = useSuggestions(story);
 
   // Update form validation when duplicate status changes
   useEffect(() => {
@@ -389,6 +393,10 @@ export default function Home() {
                         />
                       </FormControl>
                       <FormMessage />
+                      <SuggestionsDisplay
+                        suggestions={suggestions}
+                        isLoading={isSuggestionsLoading}
+                      />
                     </FormItem>
                   )}
                 />

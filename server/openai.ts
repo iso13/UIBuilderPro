@@ -84,3 +84,85 @@ export async function generateFeature(
     throw new Error(`Failed to generate feature: ${error.message}`);
   }
 }
+
+interface FeatureAnalysis {
+  quality_score: number;
+  suggestions: string[];
+  improved_title?: string;
+}
+
+export async function analyzeFeature(content: string, currentTitle: string): Promise<FeatureAnalysis> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert in BDD and Cucumber feature analysis. Analyze the given feature file and provide quality feedback and suggestions for improvement. Focus on business value, clarity, and adherence to BDD best practices."
+        },
+        {
+          role: "user",
+          content: `Analyze this Cucumber feature and provide:
+          1. A quality score (0-100)
+          2. Specific suggestions for improvement
+          3. A suggested improved title if the current one can be better
+
+          Current title: "${currentTitle}"
+
+          Feature content:
+          ${content}
+
+          Respond in JSON format with these keys:
+          - quality_score: number
+          - suggestions: array of strings
+          - improved_title: string (optional, only if you have a better suggestion)`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3
+    });
+
+    const result = JSON.parse(response.choices[0].message.content);
+    return {
+      quality_score: Math.min(100, Math.max(0, result.quality_score)),
+      suggestions: result.suggestions || [],
+      improved_title: result.improved_title
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to analyze feature: ${error.message}`);
+  }
+}
+
+export async function suggestTitle(story: string): Promise<string[]> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert in creating clear, concise titles for BDD features. Generate title suggestions that are descriptive yet concise."
+        },
+        {
+          role: "user",
+          content: `Based on this user story, suggest 3 clear and concise feature titles:
+
+          ${story}
+
+          Respond in JSON format with an array of strings under the key "titles".
+          Each title should be:
+          - Clear and descriptive
+          - Concise (max 5 words)
+          - Follow proper capitalization
+          - Focused on the business value`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7
+    });
+
+    const result = JSON.parse(response.choices[0].message.content);
+    return result.titles || [];
+  } catch (error: any) {
+    throw new Error(`Failed to suggest titles: ${error.message}`);
+  }
+}

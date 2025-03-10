@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateFeature } from "./openai";
 import { insertFeatureSchema, updateFeatureSchema, insertAnalyticsSchema } from "@shared/schema";
+import { analyzeFeature, suggestTitle } from "./ai"; // Assuming these functions are defined elsewhere
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
@@ -155,6 +157,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const analyticsData = await storage.getAnalytics();
       res.json(analyticsData);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Add these new routes after the existing feature routes
+  app.post("/api/features/:id/analyze", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const feature = await storage.getFeature(id);
+
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+
+      if (!feature.generatedContent) {
+        return res.status(400).json({ message: "Feature has no content to analyze" });
+      }
+
+      const analysis = await analyzeFeature(feature.generatedContent, feature.title);
+      res.json(analysis);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/suggest-titles", async (req, res) => {
+    try {
+      const { story } = req.body;
+      if (!story) {
+        return res.status(400).json({ message: "Story is required" });
+      }
+
+      const titles = await suggestTitle(story);
+      res.json({ titles });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
