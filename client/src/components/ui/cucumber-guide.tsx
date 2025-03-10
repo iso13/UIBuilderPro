@@ -20,31 +20,31 @@ interface Step {
 
 const bddSteps: Step[] = [
   {
-    id: "given",
-    title: "Given (Context)",
-    description: "Set up the initial context of the scenario. What's the starting point?",
-    example: "Given I am logged in as an administrator\nAnd I am on the dashboard page",
+    id: "title",
+    title: "1. Feature Title",
+    description: "Start by naming your feature clearly and concisely. A good title should describe what the feature does from a business perspective.",
+    example: "User Registration\n\nOther examples:\n- Shopping Cart Checkout\n- Product Search\n- Order Tracking",
     completed: false,
   },
   {
-    id: "when",
-    title: "When (Action)",
-    description: "Describe the key action the user performs.",
-    example: "When I click on 'Create New User'\nAnd I fill in the user details",
+    id: "story",
+    title: "2. User Story",
+    description: "Write a user story that explains the business value. Follow the format: As a [role], I want [goal], So that [benefit].",
+    example: "As a new visitor\nI want to register for an account\nSo that I can access member-only features",
     completed: false,
   },
   {
-    id: "then",
-    title: "Then (Outcome)",
-    description: "Verify the expected outcome after the action.",
-    example: "Then I should see a success message\nAnd the new user should appear in the user list",
+    id: "scenarios",
+    title: "3. Generated Scenarios",
+    description: "The AI will generate scenarios using Given-When-Then format. Each scenario represents a specific test case.",
+    example: "@userRegistration\nFeature: User Registration\n\nBackground:\n  Given the registration page is open\n\nScenario: Successful Registration\n  When the user enters valid registration details\n  Then a new account should be created\n  And the user should be logged in",
     completed: false,
-  },
+  }
 ];
 
 export function CucumberGuide() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [expandedStep, setExpandedStep] = useState<string | null>("given");
+  const [expandedStep, setExpandedStep] = useState<string | null>("title");
 
   const nextStep = () => {
     if (currentStep < bddSteps.length - 1) {
@@ -123,7 +123,8 @@ export function CucumberGuide() {
         ))}
       </Accordion>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between">
+        <p className="text-sm text-muted-foreground">Click through each step to learn about the BDD process</p>
         <Button
           onClick={nextStep}
           disabled={currentStep >= bddSteps.length - 1}
