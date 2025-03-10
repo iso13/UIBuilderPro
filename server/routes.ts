@@ -6,7 +6,7 @@ import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
 import fs from "fs-extra";
 import path from "path";
 
-type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "EXPORTED";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
@@ -236,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { status } = req.body as { status: FeatureStatus };
 
-      if (!["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED"].includes(status)) {
+      if (!["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "EXPORTED"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
 
@@ -256,8 +256,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validTransitions: Record<FeatureStatus, FeatureStatus[]> = {
         "DRAFT": ["IN_REVIEW"],
         "IN_REVIEW": ["APPROVED", "REJECTED", "DRAFT"],
-        "APPROVED": ["IN_REVIEW"],
-        "REJECTED": ["DRAFT"]
+        "APPROVED": ["IN_REVIEW", "EXPORTED"],
+        "REJECTED": ["DRAFT"],
+        "EXPORTED": ["DRAFT"] // Can go back to draft if changes are needed
       };
 
       if (!validTransitions[feature.status]?.includes(status as FeatureStatus)) {
@@ -307,9 +308,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Write feature content to file
       await fs.writeFile(featureFilePath, feature.generatedContent);
 
+      // Update status to EXPORTED
+      const updatedFeature = await storage.updateFeature(id, { status: "EXPORTED" });
+
       res.json({
         message: "Feature exported successfully",
-        filePath: featureFilePath
+        filePath: featureFilePath,
+        feature: updatedFeature
       });
     } catch (error: any) {
       console.error("Error exporting feature:", error);

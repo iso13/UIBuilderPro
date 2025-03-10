@@ -50,7 +50,7 @@ import { Badge } from "@/components/ui/badge";
 
 
 type FeatureFilter = "all" | "active" | "deleted";
-type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "EXPORTED";
 type StatusAction = {
   nextStatus: FeatureStatus;
   label: string;
@@ -90,6 +90,12 @@ function getStatusActions(currentStatus: FeatureStatus): StatusAction[] {
         label: "Revoke Approval",
         icon: <RefreshCw className="h-4 w-4" />
       }];
+    case "EXPORTED":
+      return [{
+        nextStatus: "DRAFT",
+        label: "Make Changes",
+        icon: <Edit2 className="h-4 w-4" />
+      }];
     default:
       return [];
   }
@@ -105,6 +111,8 @@ function getStatusColor(status: FeatureStatus): string {
       return "bg-green-500";
     case "REJECTED":
       return "bg-red-500";
+    case "EXPORTED":
+      return "bg-blue-500";
     default:
       return "bg-gray-500";
   }
