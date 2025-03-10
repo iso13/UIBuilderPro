@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 interface SuggestionsDisplayProps {
   suggestions: string[];
   isLoading: boolean;
+  onSelectTitle: (title: string) => void;
 }
 
-export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDisplayProps) {
+export function SuggestionsDisplay({ suggestions, isLoading, onSelectTitle }: SuggestionsDisplayProps) {
   if (isLoading) {
     return (
       <motion.div
@@ -29,7 +30,7 @@ export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDispla
     <div className="mt-2">
       <p className="text-sm text-muted-foreground flex items-center gap-2 mb-2">
         <Lightbulb className="h-4 w-4" />
-        <span>Suggested Feature Titles:</span>
+        <span>Click a suggestion to use it as your feature title:</span>
       </p>
       <AnimatePresence>
         <ul className="space-y-2">
@@ -40,7 +41,8 @@ export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDispla
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ delay: index * 0.1 }}
-              className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md cursor-pointer hover:bg-muted"
+              className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md cursor-pointer hover:bg-muted hover:text-primary transition-colors"
+              onClick={() => onSelectTitle(suggestion)}
             >
               {suggestion}
             </motion.li>

@@ -354,33 +354,6 @@ export default function Home() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Feature Title</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            placeholder="Enter feature title"
-                            {...field}
-                            className={`${isDuplicate ? "border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500" : ""}`}
-                          />
-                          {isChecking && (
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                              <LoadingSpinner />
-                            </div>
-                          )}
-                        </div>
-                      </FormControl>
-                      <div className={`${isDuplicate ? "text-red-500 dark:text-red-500" : ""}`}>
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="story"
                   render={({ field }) => (
                     <FormItem>
@@ -396,7 +369,35 @@ export default function Home() {
                       <SuggestionsDisplay
                         suggestions={suggestions}
                         isLoading={isSuggestionsLoading}
+                        onSelectTitle={(title) => form.setValue('title', title)}
                       />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Feature Title</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            placeholder="Choose a title or select from suggestions above"
+                            {...field}
+                            className={`${isDuplicate ? "border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500" : ""}`}
+                          />
+                          {isChecking && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                              <LoadingSpinner />
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <div className={`${isDuplicate ? "text-red-500 dark:text-red-500" : ""}`}>
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
