@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, Download } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, Download, ClipboardCheck, ClipboardList, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -46,9 +46,69 @@ import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
 import { CucumberGuide } from "@/components/ui/cucumber-guide";
 import { ScenarioComplexity } from "@/components/ui/scenario-complexity";
 import { ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 
 type FeatureFilter = "all" | "active" | "deleted";
+type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+type StatusAction = {
+  nextStatus: FeatureStatus;
+  label: string;
+  icon: JSX.Element;
+};
+
+function getStatusActions(currentStatus: FeatureStatus): StatusAction[] {
+  switch (currentStatus) {
+    case "DRAFT":
+      return [{
+        nextStatus: "IN_REVIEW",
+        label: "Submit for Review",
+        icon: <ClipboardList className="h-4 w-4" />
+      }];
+    case "IN_REVIEW":
+      return [
+        {
+          nextStatus: "APPROVED",
+          label: "Approve",
+          icon: <ClipboardCheck className="h-4 w-4" />
+        },
+        {
+          nextStatus: "REJECTED",
+          label: "Reject",
+          icon: <AlertTriangle className="h-4 w-4" />
+        }
+      ];
+    case "REJECTED":
+      return [{
+        nextStatus: "DRAFT",
+        label: "Back to Draft",
+        icon: <Edit2 className="h-4 w-4" />
+      }];
+    case "APPROVED":
+      return [{
+        nextStatus: "IN_REVIEW",
+        label: "Revoke Approval",
+        icon: <RefreshCw className="h-4 w-4" />
+      }];
+    default:
+      return [];
+  }
+}
+
+function getStatusColor(status: FeatureStatus): string {
+  switch (status) {
+    case "DRAFT":
+      return "bg-gray-500";
+    case "IN_REVIEW":
+      return "bg-yellow-500";
+    case "APPROVED":
+      return "bg-green-500";
+    case "REJECTED":
+      return "bg-red-500";
+    default:
+      return "bg-gray-500";
+  }
+}
 
 export default function Home() {
   const { toast } = useToast();
@@ -315,6 +375,38 @@ export default function Home() {
     editMutation.mutate({ id: editingFeature.id, ...data });
   };
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: FeatureStatus }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/features/${id}/status`,
+        { status }
+      );
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Success",
+        description: "Feature status updated successfully",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+        duration: 5000,
+      });
+    },
+  });
+
+
   return (
     <div className="mx-auto px-4 sm:px-6 lg:px-8 w-full">
       <motion.div
@@ -542,16 +634,19 @@ export default function Home() {
                     }`}
                     onClick={() => setCurrentFeature(feature)}
                   >
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <h3 className="text-lg font-semibold truncate pr-2">{feature.title}</h3>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{feature.title}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div className="flex justify-between items-start mb-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <h3 className="text-lg font-semibold truncate pr-2">{feature.title}</h3>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{feature.title}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Badge variant={feature.status.toLowerCase() as any}>{feature.status}</Badge>
+                    </div>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {feature.story}
                     </p>
@@ -560,6 +655,31 @@ export default function Home() {
                         {new Date(feature.createdAt).toLocaleDateString()}
                       </p>
                       <div className="flex gap-1">
+                        {!feature.deleted && getStatusActions(feature.status).map((action) => (
+                          <TooltipProvider key={action.nextStatus}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateStatusMutation.mutate({
+                                      id: feature.id,
+                                      status: action.nextStatus
+                                    });
+                                  }}
+                                >
+                                  {action.icon}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {action.label}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ))}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -592,12 +712,15 @@ export default function Home() {
                                     });
                                   }
                                 }}
+                                disabled={feature.status !== "APPROVED"}
                               >
                                 <Download className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              Export Feature
+                              {feature.status === "APPROVED"
+                                ? "Export Feature"
+                                : "Feature must be approved before export"}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
