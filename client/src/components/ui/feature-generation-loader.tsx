@@ -1,0 +1,83 @@
+import { motion } from "framer-motion";
+import { Wand2, FileText, CheckCircle } from "lucide-react";
+
+interface Step {
+  icon: JSX.Element;
+  label: string;
+  description: string;
+}
+
+interface FeatureGenerationLoaderProps {
+  currentStep: number;
+}
+
+export function FeatureGenerationLoader({ currentStep }: FeatureGenerationLoaderProps) {
+  const steps: Step[] = [
+    {
+      icon: <Wand2 className="h-6 w-6" />,
+      label: "Analyzing Input",
+      description: "Processing your feature requirements",
+    },
+    {
+      icon: <FileText className="h-6 w-6" />,
+      label: "Generating Scenarios",
+      description: "Creating comprehensive test scenarios",
+    },
+    {
+      icon: <CheckCircle className="h-6 w-6" />,
+      label: "Finalizing",
+      description: "Polishing and formatting the output",
+    },
+  ];
+
+  return (
+    <div className="space-y-8 py-4">
+      {steps.map((step, index) => {
+        const isActive = currentStep === index;
+        const isComplete = currentStep > index;
+
+        return (
+          <div key={step.label} className="relative">
+            <motion.div
+              className={`flex items-center gap-4 ${
+                isActive ? "text-primary" : isComplete ? "text-primary/80" : "text-muted-foreground"
+              }`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.2 }}
+            >
+              <div className="relative">
+                {isActive && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-primary/20"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                )}
+                {step.icon}
+              </div>
+              <div>
+                <p className="font-medium">{step.label}</p>
+                <p className="text-sm text-muted-foreground">{step.description}</p>
+              </div>
+            </motion.div>
+            {index < steps.length - 1 && (
+              <motion.div
+                className="absolute left-3 top-10 h-8 w-px bg-border"
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: isComplete ? 1 : 0 }}
+                transition={{ duration: 0.5 }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

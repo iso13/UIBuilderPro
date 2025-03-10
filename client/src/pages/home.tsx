@@ -37,7 +37,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ProgressSteps, type Step } from "@/components/ui/progress-steps";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiRequest } from "@/lib/queryClient";
 import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
@@ -45,8 +44,10 @@ import * as z from 'zod';
 import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
 import { CucumberGuide } from "@/components/ui/cucumber-guide";
 import { ScenarioComplexity } from "@/components/ui/scenario-complexity";
+import { FeatureGenerationLoader } from "@/components/ui/feature-generation-loader";
 
 type FeatureFilter = "all" | "active" | "deleted";
+type FeatureStatus = 'active' | 'deleted';
 
 export default function Home() {
   const { toast } = useToast();
@@ -56,12 +57,8 @@ export default function Home() {
   const [sortOption, setSortOption] = useState<SortOption>("date");
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [isContentEdited, setIsContentEdited] = useState(false);
+  const [generationStep, setGenerationStep] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationSteps, setGenerationSteps] = useState<Step[]>([
-    { id: "analyzing", label: "Analyzing Input", status: "waiting" },
-    { id: "generating", label: "Generating Scenarios", status: "waiting" },
-    { id: "finalizing", label: "Finalizing Content", status: "waiting" },
-  ]);
   const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
   const [showGuide, setShowGuide] = useState(false);
 
@@ -133,21 +130,11 @@ export default function Home() {
   const generateMutation = useMutation({
     mutationFn: async (data: InsertFeature) => {
       setIsGenerating(true);
-
-      setGenerationSteps(steps => steps.map(step =>
-        step.id === "analyzing" ? { ...step, status: "current" } : step
-      ));
+      setGenerationStep(0);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      setGenerationSteps(steps => steps.map(step =>
-        step.id === "analyzing" ? { ...step, status: "completed" } :
-          step.id === "generating" ? { ...step, status: "current" } : step
-      ));
 
+      setGenerationStep(1);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      setGenerationSteps(steps => steps.map(step =>
-        step.id === "generating" ? { ...step, status: "completed" } :
-          step.id === "finalizing" ? { ...step, status: "current" } : step
-      ));
 
       const res = await apiRequest("POST", "/api/features/generate", data);
 
@@ -156,14 +143,10 @@ export default function Home() {
         throw new Error(error.message);
       }
 
-      const result = await res.json();
-
-      setGenerationSteps(steps => steps.map(step =>
-        step.id === "finalizing" ? { ...step, status: "completed" } : step
-      ));
+      setGenerationStep(2);
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      return result;
+      return res.json();
     },
     onSuccess: (data) => {
       setCurrentFeature(data);
@@ -175,7 +158,7 @@ export default function Home() {
         duration: 3000,
       });
       setIsGenerating(false);
-      setGenerationSteps(steps => steps.map(step => ({ ...step, status: "waiting" })));
+      setGenerationStep(0);
     },
     onError: (error) => {
       toast({
@@ -185,7 +168,7 @@ export default function Home() {
         duration: 5000,
       });
       setIsGenerating(false);
-      setGenerationSteps(steps => steps.map(step => ({ ...step, status: "waiting" })));
+      setGenerationStep(0);
     },
   });
 
@@ -794,7 +777,7 @@ export default function Home() {
               </p>
             </DialogHeader>
             <div className="py-6">
-              <ProgressSteps steps={generationSteps} />
+              <FeatureGenerationLoader currentStep={generationStep} />
             </div>
           </DialogContent>
         </Dialog>
