@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, Download, ClipboardCheck, ClipboardList, AlertTriangle } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -45,70 +45,8 @@ import * as z from 'zod';
 import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
 import { CucumberGuide } from "@/components/ui/cucumber-guide";
 import { ScenarioComplexity } from "@/components/ui/scenario-complexity";
-import { ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-
 
 type FeatureFilter = "all" | "active" | "deleted";
-type FeatureStatus = "DRAFT" | "APPROVED" | "REJECTED" | "EXPORTED";
-type StatusAction = {
-  nextStatus: FeatureStatus;
-  label: string;
-  icon: JSX.Element;
-};
-
-function getStatusActions(currentStatus: FeatureStatus): StatusAction[] {
-  switch (currentStatus) {
-    case "DRAFT":
-      return [
-        {
-          nextStatus: "APPROVED",
-          label: "Approve",
-          icon: <ClipboardCheck className="h-4 w-4" />
-        },
-        {
-          nextStatus: "REJECTED",
-          label: "Reject",
-          icon: <AlertTriangle className="h-4 w-4" />
-        }
-      ];
-    case "REJECTED":
-      return [{
-        nextStatus: "DRAFT",
-        label: "Back to Draft",
-        icon: <Edit2 className="h-4 w-4" />
-      }];
-    case "APPROVED":
-      return [{
-        nextStatus: "EXPORTED",
-        label: "Export Feature",
-        icon: <Download className="h-4 w-4" />
-      }];
-    case "EXPORTED":
-      return [{
-        nextStatus: "DRAFT",
-        label: "Make Changes",
-        icon: <Edit2 className="h-4 w-4" />
-      }];
-    default:
-      return [];
-  }
-}
-
-function getStatusColor(status: FeatureStatus): string {
-  switch (status) {
-    case "DRAFT":
-      return "bg-gray-500";
-    case "APPROVED":
-      return "bg-green-500";
-    case "REJECTED":
-      return "bg-red-500";
-    case "EXPORTED":
-      return "bg-blue-500";
-    default:
-      return "bg-gray-500";
-  }
-}
 
 export default function Home() {
   const { toast } = useToast();
@@ -561,7 +499,6 @@ export default function Home() {
                     {currentFeature.generatedContent}
                   </pre>
                 </div>
-                {/* Added complexity analysis section */}
                 <div className="mt-6 border-t pt-6">
                   <ComplexityAnalysis featureId={currentFeature.id} />
                 </div>
@@ -645,7 +582,6 @@ export default function Home() {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <Badge variant={feature.status.toLowerCase() as any}>{feature.status}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                       {feature.story}
@@ -655,32 +591,6 @@ export default function Home() {
                         {new Date(feature.createdAt).toLocaleDateString()}
                       </p>
                       <div className="flex gap-1">
-                        {!feature.deleted && getStatusActions(feature.status).map((action) => (
-                          <TooltipProvider key={action.nextStatus}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    updateStatusMutation.mutate({
-                                      id: feature.id,
-                                      status: action.nextStatus
-                                    });
-                                  }}
-                                >
-                                  {action.icon}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {action.label}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ))}
-                        {/*Removed redundant export button here*/}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>

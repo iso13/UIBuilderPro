@@ -6,8 +6,6 @@ import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
 import fs from "fs-extra";
 import path from "path";
 
-type FeatureStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "EXPORTED";
-
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/features", async (_req, res) => {
     try {
@@ -149,13 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
-
-      // When restoring, reset status to DRAFT
-      const updatedFeature = await storage.updateFeature(id, { 
-        status: "DRAFT" 
-      });
-
-      res.json(updatedFeature);
+      res.json(feature);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -230,50 +222,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-
-  app.post("/api/features/:id/status", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const { status } = req.body as { status: FeatureStatus };
-
-      if (!["DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "EXPORTED"].includes(status)) {
-        return res.status(400).json({ message: "Invalid status" });
-      }
-
-      const feature = await storage.getFeature(id);
-      if (!feature) {
-        return res.status(404).json({ message: "Feature not found" });
-      }
-
-      // Prevent status changes for archived features
-      if (feature.deleted) {
-        return res.status(400).json({ 
-          message: "Cannot change status of archived features" 
-        });
-      }
-
-      // Add validation rules for status transitions
-      const validTransitions: Record<FeatureStatus, FeatureStatus[]> = {
-        "DRAFT": ["IN_REVIEW"],
-        "IN_REVIEW": ["APPROVED", "REJECTED", "DRAFT"],
-        "APPROVED": ["IN_REVIEW", "EXPORTED"],
-        "REJECTED": ["DRAFT"],
-        "EXPORTED": ["DRAFT"] // Can go back to draft if changes are needed
-      };
-
-      if (!validTransitions[feature.status]?.includes(status as FeatureStatus)) {
-        return res.status(400).json({ 
-          message: `Invalid status transition from ${feature.status} to ${status}` 
-        });
-      }
-
-      const updatedFeature = await storage.updateFeature(id, { status });
-      res.json(updatedFeature);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
 
   const httpServer = createServer(app);
   return httpServer;

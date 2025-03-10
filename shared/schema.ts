@@ -2,8 +2,6 @@ import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export type FeatureStatus = "DRAFT" | "APPROVED" | "REJECTED" | "EXPORTED";
-
 export const features = pgTable("features", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -12,7 +10,6 @@ export const features = pgTable("features", {
   generatedContent: text("generated_content"),
   manuallyEdited: boolean("manually_edited").default(false).notNull(),
   deleted: boolean("deleted").default(false).notNull(),
-  status: text("status").notNull().$type<FeatureStatus>().default("DRAFT"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -36,12 +33,10 @@ export const insertFeatureSchema = createInsertSchema(features)
     story: z.string().min(10, "Story must be at least 10 characters"),
     scenarioCount: z.number().min(1).max(10),
     generatedContent: z.string().optional(),
-    status: z.enum(["DRAFT", "APPROVED", "REJECTED", "EXPORTED"]).default("DRAFT"),
   });
 
 export const updateFeatureSchema = insertFeatureSchema.partial().extend({
   generatedContent: z.string().min(1, "Feature content is required"),
-  status: z.enum(["DRAFT", "APPROVED", "REJECTED", "EXPORTED"]).optional(),
 });
 
 export const insertAnalyticsSchema = createInsertSchema(analytics)
