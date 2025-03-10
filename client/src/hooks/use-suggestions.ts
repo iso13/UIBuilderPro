@@ -26,19 +26,22 @@ export function useSuggestions(story: string) {
     }
   }, [story]);
 
-  const { data: suggestions, isLoading } = useQuery({
-    queryKey: ['/api/features/suggest', debouncedStory],
+  const { data, isLoading } = useQuery({
+    queryKey: ['/api/features/suggest-titles', debouncedStory],
     queryFn: async () => {
-      if (!debouncedStory || debouncedStory.length < 20) return { suggestions: [] };
+      if (!debouncedStory || debouncedStory.length < 20) return { titles: [] };
 
-      const res = await apiRequest('POST', '/api/features/suggest', { story: debouncedStory });
+      const res = await apiRequest('POST', '/api/features/suggest-titles', { story: debouncedStory });
+      if (!res.ok) {
+        throw new Error('Failed to fetch suggestions');
+      }
       return res.json();
     },
     enabled: debouncedStory.length >= 20,
   });
 
   return {
-    suggestions: suggestions?.suggestions || [],
+    suggestions: data?.titles || [],
     isLoading: isLoadingWithDelay || isLoading,
   };
 }

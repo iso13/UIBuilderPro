@@ -16,7 +16,7 @@ export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDispla
         className="mt-2 text-sm text-muted-foreground flex items-center gap-2"
       >
         <Lightbulb className="h-4 w-4 animate-pulse" />
-        <span>Analyzing your story...</span>
+        <span>AI is analyzing your story to suggest feature titles...</span>
       </motion.div>
     );
   }
@@ -29,7 +29,7 @@ export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDispla
     <div className="mt-2">
       <p className="text-sm text-muted-foreground flex items-center gap-2 mb-2">
         <Lightbulb className="h-4 w-4" />
-        <span>AI Suggestions:</span>
+        <span>Suggested Feature Titles:</span>
       </p>
       <AnimatePresence>
         <ul className="space-y-2">
@@ -40,7 +40,7 @@ export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDispla
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ delay: index * 0.1 }}
-              className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md"
+              className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md cursor-pointer hover:bg-muted"
             >
               {suggestion}
             </motion.li>
