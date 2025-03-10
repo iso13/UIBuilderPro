@@ -182,20 +182,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/features/:id/complexity", async (req, res) => {
     try {
+      console.log(`Analyzing complexity for feature ${req.params.id}`);
       const id = parseInt(req.params.id);
       const feature = await storage.getFeature(id);
 
       if (!feature) {
+        console.log(`Feature ${id} not found`);
         return res.status(404).json({ message: "Feature not found" });
       }
 
       if (!feature.generatedContent) {
+        console.log(`Feature ${id} has no content to analyze`);
         return res.status(400).json({ message: "Feature has no content to analyze" });
       }
 
+      console.log(`Starting complexity analysis for feature ${id}`);
       const complexity = await analyzeFeatureComplexity(feature.generatedContent);
+      console.log(`Completed complexity analysis for feature ${id}`);
+
       res.json(complexity);
     } catch (error: any) {
+      console.error(`Error analyzing complexity for feature ${req.params.id}:`, error);
       res.status(500).json({ message: error.message });
     }
   });

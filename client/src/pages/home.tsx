@@ -811,7 +811,7 @@ function updateFeatureContent(content: string, newTitle: string): string {
 }
 
 function ComplexityAnalysis({ featureId }: { featureId: number }) {
-  const { data: complexity, isLoading } = useQuery({
+  const { data: complexity, isLoading, refetch } = useQuery({
     queryKey: ['/api/features/complexity', featureId],
     queryFn: async () => {
       const res = await apiRequest(
@@ -839,6 +839,27 @@ function ComplexityAnalysis({ featureId }: { featureId: number }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-medium flex items-center gap-2">
+          <Activity className="h-4 w-4" />
+          Scenario Complexity Analysis
+        </h4>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <LoadingSpinner className="mr-2 h-4 w-4" />
+              Analyzing...
+            </>
+          ) : (
+            'Refresh Analysis'
+          )}
+        </Button>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {complexity.scenarios.map((scenario: {
           name: string;
