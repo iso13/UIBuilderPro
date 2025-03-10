@@ -43,8 +43,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
 import * as z from 'zod';
 import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
-import { useSuggestions } from "@/hooks/use-suggestions";
-import { SuggestionsDisplay } from "@/components/ui/suggestions-display";
+
 
 type FeatureFilter = "all" | "active" | "deleted";
 
@@ -76,10 +75,7 @@ export default function Home() {
 
   const title = form.watch("title");
   const { isDuplicate, isChecking } = useCheckDuplicateTitle(title);
-  const story = form.watch("story");
-  const { suggestions, isLoading: isSuggestionsLoading } = useSuggestions(story);
 
-  // Update form validation when duplicate status changes
   useEffect(() => {
     if (isDuplicate) {
       form.setError("title", {
@@ -109,21 +105,18 @@ export default function Home() {
   const filteredAndSortedFeatures = useMemo(() => {
     let result = [...features];
 
-    // Apply search filter
     if (searchQuery) {
       result = result.filter(feature =>
         feature.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Apply deleted filter
     if (filterOption === "active") {
       result = result.filter(feature => !feature.deleted);
     } else if (filterOption === "deleted") {
       result = result.filter(feature => feature.deleted);
     }
 
-    // Apply sorting
     result.sort((a, b) => {
       if (sortOption === "title") {
         return a.title.localeCompare(b.title);
@@ -139,7 +132,6 @@ export default function Home() {
     mutationFn: async (data: InsertFeature) => {
       setIsGenerating(true);
 
-      // Step 1: Analyzing
       setGenerationSteps(steps => steps.map(step =>
         step.id === "analyzing" ? { ...step, status: "current" } : step
       ));
@@ -149,14 +141,12 @@ export default function Home() {
           step.id === "generating" ? { ...step, status: "current" } : step
       ));
 
-      // Step 2: Generating
       await new Promise(resolve => setTimeout(resolve, 1000));
       setGenerationSteps(steps => steps.map(step =>
         step.id === "generating" ? { ...step, status: "completed" } :
           step.id === "finalizing" ? { ...step, status: "current" } : step
       ));
 
-      // Step 3: Making the actual API call
       const res = await apiRequest("POST", "/api/features/generate", data);
 
       if (!res.ok) {
@@ -166,7 +156,6 @@ export default function Home() {
 
       const result = await res.json();
 
-      // Step 4: Finalizing
       setGenerationSteps(steps => steps.map(step =>
         step.id === "finalizing" ? { ...step, status: "completed" } : step
       ));
@@ -183,7 +172,6 @@ export default function Home() {
         description: "Feature generated successfully",
         duration: 3000,
       });
-      // Reset states
       setIsGenerating(false);
       setGenerationSteps(steps => steps.map(step => ({ ...step, status: "waiting" })));
     },
@@ -194,7 +182,6 @@ export default function Home() {
         variant: "destructive",
         duration: 5000,
       });
-      // Reset states
       setIsGenerating(false);
       setGenerationSteps(steps => steps.map(step => ({ ...step, status: "waiting" })));
     },
@@ -354,29 +341,6 @@ export default function Home() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="story"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Feature Story</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Enter feature story"
-                          className="min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <SuggestionsDisplay
-                        suggestions={suggestions}
-                        isLoading={isSuggestionsLoading}
-                        onSelectTitle={(title) => form.setValue('title', title)}
-                      />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="title"
                   render={({ field }) => (
                     <FormItem>
@@ -384,7 +348,7 @@ export default function Home() {
                       <FormControl>
                         <div className="relative">
                           <Input
-                            placeholder="Choose a title or select from suggestions above"
+                            placeholder="Enter feature title"
                             {...field}
                             className={`${isDuplicate ? "border-red-500 dark:border-red-500 focus:border-red-500 dark:focus:border-red-500" : ""}`}
                           />
@@ -398,6 +362,24 @@ export default function Home() {
                       <div className={`${isDuplicate ? "text-red-500 dark:text-red-500" : ""}`}>
                         <FormMessage />
                       </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="story"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Feature Story</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter feature story"
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -773,17 +755,13 @@ export default function Home() {
 }
 
 function updateFeatureContent(content: string, newTitle: string): string {
-  // Create the new feature tag
   const featureTag = `@${newTitle
     .split(/\s+/)
     .map((word, index) => index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
     .join('')}`;
 
-  // Update the content
   let updatedContent = content
-    // Replace old feature tag
     .replace(/@[\w]+\n/, `${featureTag}\n`)
-    // Replace Feature: line
     .replace(/Feature:.*\n/, `Feature: ${newTitle}\n`);
 
   return updatedContent;
