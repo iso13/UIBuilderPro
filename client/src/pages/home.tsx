@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertFeatureSchema, type InsertFeature, type Feature, type SortOption, updateFeatureSchema } from "@shared/schema";
 import * as z from 'zod';
 import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
+import { CucumberGuide } from "@/components/ui/cucumber-guide";
 
 
 type FeatureFilter = "all" | "active" | "deleted";
@@ -62,6 +63,7 @@ export default function Home() {
     { id: "finalizing", label: "Finalizing Content", status: "waiting" },
   ]);
   const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
+  const [showGuide, setShowGuide] = useState(false);
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
@@ -324,9 +326,19 @@ export default function Home() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-            Feature Generator
-          </h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              Feature Generator
+            </h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => setShowGuide(true)}
+            >
+              <HelpCircle className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+            </Button>
+          </div>
           <p className="text-muted-foreground mt-2">
             Generate Cucumber features using AI
           </p>
@@ -747,6 +759,14 @@ export default function Home() {
             <div className="py-6">
               <ProgressSteps steps={generationSteps} />
             </div>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={showGuide} onOpenChange={setShowGuide}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Learn BDD with Cucumber</DialogTitle>
+            </DialogHeader>
+            <CucumberGuide />
           </DialogContent>
         </Dialog>
       </motion.div>
