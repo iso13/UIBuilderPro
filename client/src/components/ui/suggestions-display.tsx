@@ -9,10 +9,15 @@ interface SuggestionsDisplayProps {
 export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDisplayProps) {
   if (isLoading) {
     return (
-      <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="mt-2 text-sm text-muted-foreground flex items-center gap-2"
+      >
         <Lightbulb className="h-4 w-4 animate-pulse" />
         <span>Analyzing your story...</span>
-      </div>
+      </motion.div>
     );
   }
 
@@ -34,6 +39,7 @@ export function SuggestionsDisplay({ suggestions, isLoading }: SuggestionsDispla
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
+              transition={{ delay: index * 0.1 }}
               className="text-sm text-muted-foreground bg-muted/50 p-2 rounded-md"
             >
               {suggestion}
