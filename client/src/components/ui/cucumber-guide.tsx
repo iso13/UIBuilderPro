@@ -18,39 +18,57 @@ interface Step {
   completed: boolean;
 }
 
-const bddSteps: Step[] = [
+const steps: Step[] = [
   {
-    id: "title",
-    title: "1. Feature Title",
-    description: "Start by naming your feature clearly and concisely. A good title should describe what the feature does from a business perspective.",
-    example: "User Registration\n\nOther examples:\n- Shopping Cart Checkout\n- Product Search\n- Order Tracking",
+    id: "feature",
+    title: "1. Writing Feature Title",
+    description: "A Cucumber feature file starts with a tag and title. The tag helps categorize and organize features, while the title clearly describes what the feature does.",
+    example: `# Tag follows the format @lowercaseFirst + UppercaseRest
+@userRegistration
+Feature: User Registration
+# Story follows below the Feature line with no empty line`,
     completed: false,
   },
   {
     id: "story",
-    title: "2. User Story",
-    description: "Write a user story that explains the business value. Follow the format: As a [role], I want [goal], So that [benefit].",
-    example: "As a new visitor\nI want to register for an account\nSo that I can access member-only features",
+    title: "2. Writing User Story",
+    description: "The story explains the business value in the format: As a [role], I want [goal], So that [benefit]. This drives the feature's purpose.",
+    example: `@userRegistration
+Feature: User Registration
+As a potential customer
+I want to create an account on the platform
+So that I can access personalized features`,
     completed: false,
   },
   {
-    id: "scenarios",
-    title: "3. Generated Scenarios",
-    description: "The AI will generate scenarios using Given-When-Then format. Each scenario represents a specific test case.",
-    example: "@userRegistration\nFeature: User Registration\n\nBackground:\n  Given the registration page is open\n\nScenario: Successful Registration\n  When the user enters valid registration details\n  Then a new account should be created\n  And the user should be logged in",
+    id: "structure",
+    title: "3. Understanding Generated Scenarios",
+    description: "Each scenario uses Given-When-Then to describe a specific test case. Background section contains common setup steps used across all scenarios.",
+    example: `Background:
+  Given the registration page is open
+
+Scenario: Successful Registration
+  When valid registration details are entered
+  Then a new account should be created
+  And a welcome email should be sent
+
+Scenario: Invalid Email Format
+  When an invalid email format is used
+  Then an error message should be displayed
+  And the registration should not proceed`,
     completed: false,
   }
 ];
 
 export function CucumberGuide() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [expandedStep, setExpandedStep] = useState<string | null>("title");
+  const [expandedStep, setExpandedStep] = useState<string | null>("feature");
 
   const nextStep = () => {
-    if (currentStep < bddSteps.length - 1) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(current => {
         const next = current + 1;
-        setExpandedStep(bddSteps[next].id);
+        setExpandedStep(steps[next].id);
         return next;
       });
     }
@@ -60,12 +78,12 @@ export function CucumberGuide() {
     <Card className="p-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-2 mb-6">
         <PlayCircle className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-semibold">Interactive BDD Guide</h2>
+        <h2 className="text-2xl font-semibold">Creating Cucumber Features</h2>
       </div>
 
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
-          {bddSteps.map((step, index) => (
+          {steps.map((step, index) => (
             <motion.div
               key={step.id}
               className="flex items-center"
@@ -78,7 +96,7 @@ export function CucumberGuide() {
               >
                 {index + 1}
               </div>
-              {index < bddSteps.length - 1 && (
+              {index < steps.length - 1 && (
                 <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground" />
               )}
             </motion.div>
@@ -92,7 +110,7 @@ export function CucumberGuide() {
         onValueChange={setExpandedStep}
         className="mb-6"
       >
-        {bddSteps.map((step, index) => (
+        {steps.map((step, index) => (
           <AccordionItem key={step.id} value={step.id}>
             <AccordionTrigger
               className={`${
@@ -115,7 +133,7 @@ export function CucumberGuide() {
               <div className="space-y-4">
                 <p className="text-muted-foreground">{step.description}</p>
                 <div className="bg-muted p-4 rounded-md">
-                  <pre className="whitespace-pre-wrap text-sm">{step.example}</pre>
+                  <pre className="whitespace-pre-wrap text-sm font-mono">{step.example}</pre>
                 </div>
               </div>
             </AccordionContent>
@@ -123,13 +141,13 @@ export function CucumberGuide() {
         ))}
       </Accordion>
 
-      <div className="flex justify-between">
-        <p className="text-sm text-muted-foreground">Click through each step to learn about the BDD process</p>
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">Step through the guide to learn how to create Cucumber features</p>
         <Button
           onClick={nextStep}
-          disabled={currentStep >= bddSteps.length - 1}
+          disabled={currentStep >= steps.length - 1}
         >
-          {currentStep >= bddSteps.length - 1 ? (
+          {currentStep >= steps.length - 1 ? (
             "Completed!"
           ) : (
             <>
