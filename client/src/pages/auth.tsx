@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -10,10 +10,9 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Navigate } from "wouter";
 
 export default function AuthPage() {
-  // Call all hooks at the top level
+  // Call all hooks unconditionally at the top level
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
@@ -36,11 +35,12 @@ export default function AuthPage() {
     },
   });
 
-  // Handle authenticated user redirect
-  if (user) {
-    navigate("/");
-    return null;
-  }
+  // Handle navigation with useEffect
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const onRegister = useCallback(async (data: RegisterInput) => {
     try {
@@ -75,6 +75,11 @@ export default function AuthPage() {
       });
     }
   }, [loginMutation, toast, navigate]);
+
+  // Early return if authenticated to avoid rendering the form
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
