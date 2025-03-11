@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -45,10 +46,13 @@ import { useCheckDuplicateTitle } from "@/hooks/use-check-duplicate-title";
 import { CucumberGuide } from "@/components/ui/cucumber-guide";
 import { ScenarioComplexity } from "@/components/ui/scenario-complexity";
 import { FeatureGenerationLoader } from "@/components/ui/feature-generation-loader";
+import { useAuth } from "@/hooks/use-auth"; // Import useAuth
 
 type FeatureFilter = "all" | "active" | "deleted";
 
 export default function Home() {
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentFeature, setCurrentFeature] = useState<Feature | null>(null);
@@ -60,6 +64,15 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
   const [showGuide, setShowGuide] = useState(false);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   const form = useForm<InsertFeature>({
     resolver: zodResolver(insertFeatureSchema),
