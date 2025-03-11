@@ -64,7 +64,15 @@ export function FeatureGenerationLoader({ currentStep }: FeatureGenerationLoader
                     }}
                   />
                 )}
-                {step.icon}
+                <div className={`${
+                  isActive 
+                    ? "text-primary dark:text-primary"
+                    : isComplete 
+                      ? "text-primary/80 dark:text-primary/80"
+                      : "text-foreground/60 dark:text-foreground/90"
+                }`}>
+                  {step.icon}
+                </div>
               </div>
               <div>
                 <p className="font-medium dark:text-foreground/100">{step.label}</p>
