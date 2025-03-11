@@ -81,8 +81,6 @@ function useLogoutMutation() {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { toast } = useToast();
-  
   const {
     data: user,
     error,
