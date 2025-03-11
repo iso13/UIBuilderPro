@@ -1,6 +1,28 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Route } from "wouter";
+import { Route, useLocation } from "wouter";
+import React from 'react';
+
+function AuthenticationCheck({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
+
+  React.useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
+    );
+  }
+
+  return user ? <>{children}</> : null;
+}
 
 export function ProtectedRoute({
   path,
@@ -11,25 +33,11 @@ export function ProtectedRoute({
 }) {
   return (
     <Route path={path}>
-      {() => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const { user, isLoading } = useAuth();
-
-        if (isLoading) {
-          return (
-            <div className="flex items-center justify-center min-h-screen">
-              <Loader2 className="h-8 w-8 animate-spin text-border" />
-            </div>
-          );
-        }
-
-        if (!user) {
-          window.location.href = "/auth";
-          return null;
-        }
-
-        return <Component />;
-      }}
+      {(params) => (
+        <AuthenticationCheck>
+          <Component {...params} />
+        </AuthenticationCheck>
+      )}
     </Route>
   );
 }
