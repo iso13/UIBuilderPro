@@ -1,3 +1,5 @@
+import { openai } from "./openai";
+
 async function generateProductNames(description: string): Promise<string[]> {
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -10,14 +12,14 @@ async function generateProductNames(description: string): Promise<string[]> {
         role: "user",
         content: `Generate 5 creative product names for this product:
         ${description}
-        
+
         Consider these aspects:
         - Easy to remember and pronounce
         - Reflects AI/automation capability
         - Relates to testing/BDD concepts
         - Sounds professional and trustworthy
         - Available as a domain name (generic terms)
-        
+
         Format: Return a JSON array of objects with name and reasoning.`
       }
     ],
