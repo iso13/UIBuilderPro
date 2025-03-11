@@ -1,8 +1,16 @@
+import { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "wouter";
+import { Link, useLocation } from "wouter";
 import { registerSchema, type RegisterInput } from "@shared/schema";
-import { Form } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function RegisterPage() {
   const { toast } = useToast();
-  const [, navigate] = useNavigate();
+  const [, navigate] = useLocation();
 
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -22,10 +30,13 @@ export default function RegisterPage() {
     },
   });
 
-  const onSubmit = async (data: RegisterInput) => {
+  const onSubmit = useCallback(async (data: RegisterInput) => {
     try {
       await apiRequest("/api/auth/register", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(data),
       });
 
@@ -42,7 +53,7 @@ export default function RegisterPage() {
         description: error.message || "Something went wrong. Please try again.",
       });
     }
-  };
+  }, [toast, navigate]);
 
   return (
     <div className="container mx-auto max-w-md py-8">
@@ -54,45 +65,45 @@ export default function RegisterPage() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <Form.Field
+            <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
-                <Form.Item>
-                  <Form.Label>Email</Form.Label>
-                  <Form.Control>
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
                     <Input placeholder="your@email.com" {...field} />
-                  </Form.Control>
-                  <Form.Message />
-                </Form.Item>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
-            <Form.Field
+            <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
-                <Form.Item>
-                  <Form.Label>Password</Form.Label>
-                  <Form.Control>
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
-                  </Form.Control>
-                  <Form.Message />
-                </Form.Item>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
-            <Form.Field
+            <FormField
               control={form.control}
               name="confirmPassword"
               render={({ field }) => (
-                <Form.Item>
-                  <Form.Label>Confirm Password</Form.Label>
-                  <Form.Control>
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
-                  </Form.Control>
-                  <Form.Message />
-                </Form.Item>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
@@ -101,6 +112,13 @@ export default function RegisterPage() {
             </Button>
           </form>
         </Form>
+
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            Sign in
+          </Link>
+        </p>
       </Card>
     </div>
   );
