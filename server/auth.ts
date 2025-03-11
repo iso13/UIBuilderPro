@@ -74,11 +74,16 @@ export async function registerAuthRoutes(app: any) {
 
       // Start session
       req.session.userId = user.id;
-
-      res.json({ 
-        id: user.id,
-        email: user.email,
-        isAdmin: user.isAdmin
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Failed to establish session" });
+        }
+        res.json({ 
+          id: user.id,
+          email: user.email,
+          isAdmin: user.isAdmin
+        });
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -87,12 +92,17 @@ export async function registerAuthRoutes(app: any) {
 
   // Logout
   app.post("/api/auth/logout", (req: Request, res: Response) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Failed to logout" });
-      }
-      res.json({ message: "Logged out successfully" });
-    });
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destruction error:", err);
+          return res.status(500).json({ message: "Failed to logout" });
+        }
+        res.json({ message: "Logged out successfully" });
+      });
+    } else {
+      res.json({ message: "No active session" });
+    }
   });
 
   // Get current user
