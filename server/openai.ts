@@ -273,4 +273,4 @@ async function analyzeFeatureComplexity(content: string): Promise<FeatureComplex
   }
 }
 
-export { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity };
+export { openai, generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity };
