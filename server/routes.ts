@@ -6,6 +6,7 @@ import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
 import fs from "fs-extra";
 import path from "path";
 import { requireAuth } from "./auth";
+import JSZip from 'jszip';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Protected route - only authenticated users can access features
@@ -148,6 +149,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Feature not found" });
       }
       res.json(feature);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/features/export/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const feature = await storage.getFeature(id);
+
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+
+      // Format the feature content for download
+      const content = feature.generatedContent;
+      const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.feature`;
+
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+
+      res.send(content);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/export-multiple", requireAuth, async (req, res) => {
+    try {
+      const { featureIds } = req.body;
+
+      if (!Array.isArray(featureIds) || featureIds.length === 0) {
+        return res.status(400).json({ message: "No features selected for export" });
+      }
+
+      const features = await Promise.all(
+        featureIds.map(id => storage.getFeature(id))
+      );
+
+      // Filter out any null results
+      const validFeatures = features.filter((f): f is NonNullable<typeof f> => f !== null);
+
+      if (validFeatures.length === 0) {
+        return res.status(404).json({ message: "No valid features found" });
+      }
+
+      // Create a zip file containing all feature files
+      const zip = new JSZip();
+
+      validFeatures.forEach(feature => {
+        const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.feature`;
+        zip.file(filename, feature.generatedContent);
+      });
+
+      const zipContent = await zip.generateAsync({ type: "nodebuffer" });
+
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename=features.zip');
+
+      res.send(zipContent);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

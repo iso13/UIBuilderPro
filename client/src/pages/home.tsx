@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,25 @@ import { FeatureGenerationLoader } from "@/components/ui/feature-generation-load
 import { useAuth } from "@/hooks/use-auth"; // Import useAuth
 
 type FeatureFilter = "all" | "active" | "deleted";
+
+async function downloadFeature(feature: Feature) {
+  try {
+    const response = await fetch(`/api/features/export/${feature.id}`);
+    if (!response.ok) throw new Error('Export failed');
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.feature`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Download failed:', error);
+  }
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -598,6 +617,26 @@ export default function Home() {
                             </TooltipTrigger>
                             <TooltipContent>
                               Edit Feature
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadFeature(feature);
+                                }}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Export Feature
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
