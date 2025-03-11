@@ -44,7 +44,7 @@ export function FeatureGenerationLoader({ currentStep }: FeatureGenerationLoader
                   ? "text-primary" 
                   : isComplete 
                     ? "text-primary/80" 
-                    : "text-muted-foreground/60 dark:text-muted-foreground/80"
+                    : "text-muted-foreground/80 dark:text-foreground/90"
               }`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -53,7 +53,7 @@ export function FeatureGenerationLoader({ currentStep }: FeatureGenerationLoader
               <div className="relative">
                 {isActive && (
                   <motion.div
-                    className="absolute inset-0 rounded-full bg-primary/20 dark:bg-primary/30"
+                    className="absolute inset-0 rounded-full bg-primary/20 dark:bg-primary/40"
                     animate={{
                       scale: [1, 1.2, 1],
                     }}
@@ -67,13 +67,13 @@ export function FeatureGenerationLoader({ currentStep }: FeatureGenerationLoader
                 {step.icon}
               </div>
               <div>
-                <p className="font-medium dark:text-foreground">{step.label}</p>
-                <p className="text-sm text-muted-foreground dark:text-muted-foreground/90">{step.description}</p>
+                <p className="font-medium dark:text-foreground/100">{step.label}</p>
+                <p className="text-sm text-muted-foreground dark:text-foreground/80">{step.description}</p>
               </div>
             </motion.div>
             {index < steps.length - 1 && (
               <motion.div
-                className="absolute left-3 top-10 h-8 w-px bg-border dark:bg-border/60"
+                className="absolute left-3 top-10 h-8 w-px bg-border dark:bg-border/80"
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: isComplete ? 1 : 0 }}
                 transition={{ duration: 0.5 }}
