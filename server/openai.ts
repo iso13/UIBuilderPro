@@ -35,13 +35,15 @@ async function generateFeature(
       .map((word, index) => index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1))
       .join('')}`;
 
-    const aiPrompt = `Generate a Cucumber BDD feature file for the feature titled "${title}" with ${scenarioCount} scenarios.
+    const aiPrompt = `Generate a Cucumber BDD feature file for the feature titled "${title}" with EXACTLY ${scenarioCount} scenarios.
+    IMPORTANT: You must generate exactly ${scenarioCount} unique scenarios, no more and no less.
     IMPORTANT: Use exactly ONE feature tag that matches this format: ${featureTag}
 
     Feature Story:
     ${story}
 
     Guidelines for Scenario Generation:
+    - Write ${scenarioCount} distinct scenarios that cover different aspects of the feature
     - Write scenarios that describe the BUSINESS OUTCOME, not specific UI interactions
     - Use declarative language that focuses on WHAT should happen, not HOW it happens
     - Each scenario should represent a distinct business rule or acceptance criterion
@@ -52,9 +54,17 @@ async function generateFeature(
     - IMPORTANT: There should be no empty line between Feature: Title and the story
     - IMPORTANT: Include exactly one tag at the top of the feature file
 
-    Example of Declarative vs Imperative:
-    Imperative: "When I click the Add User button and enter details"
-    Declarative: "When a new user is created with valid information"
+    For CMMi-related features, consider these aspects for different scenarios:
+    - Process Area Coverage
+    - Documentation and Evidence
+    - Measurement and Analysis
+    - Training and Skills
+    - Continuous Improvement
+    - Risk Management
+    - Quality Assurance
+    - Project Management
+    - Supplier Management
+    - Configuration Management
 
     Example Format:
     ${featureTag}
@@ -68,14 +78,16 @@ async function generateFeature(
 
     Scenario: First Scenario
       When an action occurs
-      Then there is an outcome`;
+      Then there is an outcome
+
+    [CONTINUE WITH EXACTLY ${scenarioCount - 1} MORE SCENARIOS]`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are an expert in writing Cucumber features. Generate a feature file based on the given guidelines. Always include exactly ONE feature tag that matches the provided format, and use Background for common Given steps."
+          content: `You are an expert in writing Cucumber features. Generate a feature file with EXACTLY ${scenarioCount} scenarios based on the given guidelines. Always include exactly ONE feature tag that matches the provided format, and use Background for common Given steps.`
         },
         {
           role: "user",
@@ -83,7 +95,7 @@ async function generateFeature(
         },
       ],
       temperature: 0.3,
-      max_tokens: 1500
+      max_tokens: 2000
     });
 
     let featureContent = response.choices[0].message.content || "";
@@ -96,6 +108,14 @@ async function generateFeature(
 
     // Ensure only one feature tag is present and it's the correct one
     featureContent = featureContent.replace(/@[\w]+\s*\n(@[\w]+\s*\n)*/, `${featureTag}\n`);
+
+    // Verify scenario count
+    const scenarioMatches = featureContent.match(/Scenario:/g);
+    const actualScenarioCount = scenarioMatches ? scenarioMatches.length : 0;
+
+    if (actualScenarioCount !== scenarioCount) {
+      throw new Error(`Generated content has ${actualScenarioCount} scenarios instead of the requested ${scenarioCount} scenarios. Please try again.`);
+    }
 
     return featureContent;
   } catch (error: any) {
