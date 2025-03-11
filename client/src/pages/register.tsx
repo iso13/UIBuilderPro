@@ -32,13 +32,7 @@ export default function RegisterPage() {
 
   const onSubmit = useCallback(async (data: RegisterInput) => {
     try {
-      await apiRequest("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/auth/register", data);
 
       toast({
         title: "Registration successful",
