@@ -1,17 +1,10 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Route, useLocation } from "wouter";
+import { Route } from "wouter";
 import React from 'react';
 
 function AuthenticationCheck({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  const [, navigate] = useLocation();
-
-  React.useEffect(() => {
-    if (!isLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, isLoading, navigate]);
 
   if (isLoading) {
     return (

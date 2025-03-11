@@ -12,6 +12,8 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { AuthProvider } from "@/hooks/use-auth";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 function Navigation() {
   const { user, logoutMutation } = useAuth();
@@ -35,13 +37,33 @@ function Navigation() {
   );
 }
 
+function AuthenticatedRoutes() {
+  const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading || !user) return null;
+
+  return (
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/analytics" component={Analytics} />
+    </Switch>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/auth" component={Auth} />
-      <ProtectedRoute path="/" component={Home} />
-      <ProtectedRoute path="/analytics" component={Analytics} />
-      <Route component={NotFound} />
+      <Route path="*">
+        <AuthenticatedRoutes />
+      </Route>
     </Switch>
   );
 }
