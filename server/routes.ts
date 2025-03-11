@@ -5,7 +5,8 @@ import { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity
 import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
 import fs from "fs-extra";
 import path from "path";
-import { requireAuth } from "./auth"; // Import the requireAuth middleware
+import { requireAuth } from "./auth";
+import { generateProductNames } from "./name-suggestions";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Protected route - only authenticated users can access features
@@ -223,10 +224,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add this route to generate name suggestions
   app.post("/api/generate-names", requireAuth, async (req, res) => {
     try {
-      const { productDescription } = req.body; // Assuming product description is sent in the request body
+      const { productDescription } = req.body;
       if (!productDescription) {
         return res.status(400).json({ message: "Product description is required" });
       }
