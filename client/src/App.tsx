@@ -36,14 +36,6 @@ function Navigation() {
 }
 
 function Router() {
-  const { user } = useAuth();
-
-  // Redirect to auth if not logged in
-  if (!user && window.location.pathname !== '/auth') {
-    window.location.href = '/auth';
-    return null;
-  }
-
   return (
     <Switch>
       <Route path="/auth" component={Auth} />
