@@ -5,9 +5,11 @@ import { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity
 import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
 import fs from "fs-extra";
 import path from "path";
+import { requireAuth } from "./auth"; // Import the requireAuth middleware
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.get("/api/features", async (_req, res) => {
+  // Protected route - only authenticated users can access features
+  app.get("/api/features", requireAuth, async (_req, res) => {
     try {
       const includeDeleted = _req.query.includeDeleted === 'true';
       const features = await storage.getAllFeatures(includeDeleted);
@@ -17,7 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/features/generate", async (req, res) => {
+  app.post("/api/features/generate", requireAuth, async (req, res) => {
     try {
       const data = insertFeatureSchema.parse(req.body);
 
@@ -66,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/features/:id", async (req, res) => {
+  app.patch("/api/features/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const data = updateFeatureSchema.parse(req.body);
@@ -90,8 +92,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If scenarioCount changed or title changed, always regenerate
       if ((data.scenarioCount && data.scenarioCount !== currentFeature.scenarioCount) ||
           (data.title && data.title !== currentFeature.title)) {
-        console.log(`Regenerating content for feature ${id} with title: ${data.title || currentFeature.title} and ${data.scenarioCount || currentFeature.scenarioCount} scenarios`);
-
         // First update the feature's basic info
         await storage.updateFeature(id, {
           title: data.title,
@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/features/:id/delete", async (req, res) => {
+  app.post("/api/features/:id/delete", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const feature = await storage.softDeleteFeature(id);
@@ -140,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/features/:id/restore", async (req, res) => {
+  app.post("/api/features/:id/restore", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const feature = await storage.restoreFeature(id);
@@ -153,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/analytics", async (_req, res) => {
+  app.get("/api/analytics", requireAuth, async (_req, res) => {
     try {
       const analyticsData = await storage.getAnalytics();
       res.json(analyticsData);
@@ -162,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/features/:id/analyze", async (req, res) => {
+  app.post("/api/features/:id/analyze", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const feature = await storage.getFeature(id);
@@ -182,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/features/:id/complexity", async (req, res) => {
+  app.post("/api/features/:id/complexity", requireAuth, async (req, res) => {
     try {
       console.log(`Analyzing complexity for feature ${req.params.id}`);
       const id = parseInt(req.params.id);
@@ -209,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/features/suggest-titles", async (req, res) => {
+  app.post("/api/features/suggest-titles", requireAuth, async (req, res) => {
     try {
       const { story } = req.body;
       if (!story) {
