@@ -223,6 +223,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add this route to generate name suggestions
+  app.post("/api/generate-names", requireAuth, async (req, res) => {
+    try {
+      const { productDescription } = req.body; // Assuming product description is sent in the request body
+      if (!productDescription) {
+        return res.status(400).json({ message: "Product description is required" });
+      }
+      const names = await generateProductNames(productDescription);
+      res.json(names);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
