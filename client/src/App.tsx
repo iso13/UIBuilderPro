@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Analytics from "@/pages/analytics";
+import Register from "@/pages/register";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -13,6 +14,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/register" component={Register} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -26,7 +28,8 @@ function App() {
           <div className="fixed top-0 left-0 right-0 p-4 flex justify-between items-center bg-background/80 backdrop-blur-sm z-50">
             <nav>
               <a href="/" className="mr-4 hover:text-primary">Home</a>
-              <a href="/analytics" className="hover:text-primary">Analytics</a>
+              <a href="/analytics" className="mr-4 hover:text-primary">Analytics</a>
+              <a href="/register" className="hover:text-primary">Register (Beta)</a>
             </nav>
             <ThemeToggle />
           </div>
