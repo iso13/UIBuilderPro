@@ -10,18 +10,14 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Navigate } from "wouter";
 
 export default function AuthPage() {
+  // Call all hooks at the top level
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-
-  // If user is already logged in, redirect to home
-  if (user) {
-    return <Redirect to="/" />;
-  }
 
   const registerForm = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -39,6 +35,12 @@ export default function AuthPage() {
       password: "",
     },
   });
+
+  // Handle authenticated user redirect
+  if (user) {
+    navigate("/");
+    return null;
+  }
 
   const onRegister = useCallback(async (data: RegisterInput) => {
     try {
