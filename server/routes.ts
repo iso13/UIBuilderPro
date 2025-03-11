@@ -165,10 +165,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Format the feature content for download
       const content = feature.generatedContent;
-      const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.feature`;
+      const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.doc`;
 
-      // Set headers for file download
-      res.setHeader('Content-Type', 'text/plain');
+      // Set headers for Word document download
+      res.setHeader('Content-Type', 'application/msword');
       res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
 
       res.send(content);
@@ -200,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const zip = new JSZip();
 
       validFeatures.forEach(feature => {
-        const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.feature`;
+        const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.doc`;
         zip.file(filename, feature.generatedContent);
       });
 
