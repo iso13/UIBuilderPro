@@ -1,4 +1,4 @@
-import { features, analytics, type Feature, type InsertFeature, type Analytics, type InsertAnalytics } from "@shared/schema";
+import { features, analytics, users, type Feature, type InsertFeature, type Analytics, type InsertAnalytics, type User } from "@shared/schema";
 import { eq, ilike } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -11,18 +11,43 @@ const client = postgres(connectionString!, {
 const db = drizzle(client);
 
 export interface IStorage {
+  // User management
+  createUser(user: { email: string; passwordHash: string; isAdmin: boolean }): Promise<User>;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+
+  // Feature management
   createFeature(feature: InsertFeature & { generatedContent: string, manuallyEdited?: boolean }): Promise<Feature>;
   getFeature(id: number): Promise<Feature | undefined>;
   getAllFeatures(includeDeleted?: boolean): Promise<Feature[]>;
   updateFeature(id: number, feature: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature>;
   softDeleteFeature(id: number): Promise<Feature>;
   restoreFeature(id: number): Promise<Feature>;
+  findFeatureByTitle(title: string): Promise<Feature | undefined>;
+
+  // Analytics
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
   getAnalytics(): Promise<Analytics[]>;
-  findFeatureByTitle(title: string): Promise<Feature | undefined>;
 }
 
 export class PostgresStorage implements IStorage {
+  // User management methods
+  async createUser(user: { email: string; passwordHash: string; isAdmin: boolean }): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  // Feature management methods
   async createFeature(
     insertFeature: InsertFeature & { generatedContent: string, manuallyEdited?: boolean }
   ): Promise<Feature> {
@@ -36,11 +61,11 @@ export class PostgresStorage implements IStorage {
   }
 
   async getAllFeatures(includeDeleted: boolean = false): Promise<Feature[]> {
-    let query = db.select().from(features);
+    const query = db.select().from(features);
     if (!includeDeleted) {
-      query = query.where(eq(features.deleted, false));
+      return await query.where(eq(features.deleted, false));
     }
-    return await query.orderBy(features.id);
+    return await query;
   }
 
   async updateFeature(id: number, updateData: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature> {
@@ -79,6 +104,7 @@ export class PostgresStorage implements IStorage {
     return feature;
   }
 
+  // Analytics methods
   async trackEvent(event: InsertAnalytics): Promise<Analytics> {
     const [analytic] = await db.insert(analytics).values(event).returning();
     return analytic;

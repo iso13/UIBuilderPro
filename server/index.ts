@@ -1,10 +1,31 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
+import { registerAuthRoutes } from "./auth";
 import { setupVite, serveStatic, log } from "./vite";
+import ConnectPgSimple from "connect-pg-simple";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configure session middleware
+const pgSession = ConnectPgSimple(session);
+app.use(session({
+  store: new pgSession({
+    conObject: {
+      connectionString: process.env.DATABASE_URL,
+    },
+    createTableIfMissing: true,
+  }),
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  },
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -37,6 +58,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Register auth routes before other routes
+  await registerAuthRoutes(app);
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -47,17 +71,12 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client
   const port = 5000;
   server.listen({
     port,

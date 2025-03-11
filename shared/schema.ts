@@ -2,6 +2,14 @@ import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  isAdmin: boolean("is_admin").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const features = pgTable("features", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -11,6 +19,7 @@ export const features = pgTable("features", {
   manuallyEdited: boolean("manually_edited").default(false).notNull(),
   deleted: boolean("deleted").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: integer("user_id").references(() => users.id),
 });
 
 export const analytics = pgTable("analytics", {
@@ -20,6 +29,19 @@ export const analytics = pgTable("analytics", {
   successful: boolean("successful").notNull(),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  userId: integer("user_id").references(() => users.id),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const registerSchema = loginSchema.extend({
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 export const insertFeatureSchema = createInsertSchema(features)
@@ -52,9 +74,10 @@ export type UpdateFeature = z.infer<typeof updateFeatureSchema>;
 export type Feature = typeof features.$inferSelect;
 export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
 export type Analytics = typeof analytics.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type RegisterInput = z.infer<typeof registerSchema>;
 
-// Sorting options
 export type SortOption = "title" | "date";
 
-// Filter options for features
 export type FeatureFilter = "all" | "active" | "deleted";
