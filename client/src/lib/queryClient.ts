@@ -55,3 +55,61 @@ export const queryClient = new QueryClient({
     },
   },
 });
+import { QueryClient } from "@tanstack/react-query";
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30 * 1000,
+    },
+  },
+});
+
+interface ApiRequestOptions {
+  on401?: "throw" | "returnNull";
+}
+
+export function getQueryFn(options: ApiRequestOptions = {}) {
+  return async ({ queryKey }: { queryKey: string[] }) => {
+    const [endpoint] = queryKey;
+    
+    try {
+      const res = await fetch(endpoint);
+      
+      if (!res.ok) {
+        if (res.status === 401 && options.on401 === "returnNull") {
+          return null;
+        }
+        
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.message || `Request failed with status ${res.status}`);
+      }
+      
+      return await res.json();
+    } catch (error) {
+      console.error("Query error:", error);
+      throw error;
+    }
+  };
+}
+
+export async function apiRequest(
+  method: string,
+  endpoint: string,
+  data?: any
+) {
+  const options: RequestInit = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  };
+
+  if (data && method !== "GET") {
+    options.body = JSON.stringify(data);
+  }
+
+  return fetch(endpoint, options);
+}

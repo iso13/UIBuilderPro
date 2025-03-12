@@ -1,78 +1,73 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { ThemeProvider } from "@/components/theme-provider";
 import { UserProvider } from "@/contexts/user-context";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Home from "./pages/home";
 import NotFound from "./pages/not-found";
 import { Toaster } from "@/components/ui/toaster";
+import { useUser } from "@/contexts/user-context";
 
-function App() {
-  return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <UserProvider>
-        <AppRoutes />
-        <Toaster />
-      </UserProvider>
-    </ThemeProvider>
-  );
+// Protected route component
+function AuthenticatedRoutes({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useUser();
+  const [, navigate] = useLocation();
+  
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, isLoading, navigate]);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+  
+  if (!user) return null;
+  
+  return <>{children}</>;
 }
 
 function AppRoutes() {
-  const [location] = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch("/api/auth/me");
-        setIsAuthenticated(response.ok);
-      } catch (error) {
-        console.error("Error checking authentication:", error);
-        setIsAuthenticated(false);
-      }
-    };
-
-    checkAuth();
-  }, [location]);
-
-  if (isAuthenticated === null) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <Switch>
-      <Route path="/login">
-        {isAuthenticated ? <Home /> : <Login />}
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      <Route path="/">
+        <AuthenticatedRoutes>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/new">
+              {/* Placeholder for New Feature page */}
+              <div>New Feature Page</div>
+            </Route>
+            <Route path="/edit/:id">
+              {/* Placeholder for Edit Feature page */}
+              <div>Edit Feature Page</div>
+            </Route>
+            <Route component={NotFound} />
+          </Switch>
+        </AuthenticatedRoutes>
       </Route>
-      <Route path="/signup">
-        {isAuthenticated ? <Home /> : <Signup />}
-      </Route>
-      {isAuthenticated ? (
-        <AuthenticatedRoutes />
-      ) : (
-        <Route>
-          <Login />
-        </Route>
-      )}
+      <Route component={NotFound} />
     </Switch>
   );
 }
 
-function AuthenticatedRoutes() {
+function App() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/edit/:id">
-        {(params) => <div>Edit Feature {params.id}</div>}
-      </Route>
-      <Route path="/new">
-        {() => <div>New Feature</div>}
-      </Route>
-      <Route component={NotFound} />
-    </Switch>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <UserProvider>
+          <AppRoutes />
+          <Toaster />
+        </UserProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
