@@ -46,6 +46,7 @@ export default function NewFeature() {
 
       navigate("/");
     } catch (error) {
+      console.error("Error creating feature:", error);
       toast({
         title: "Error",
         description: "There was an error creating the feature",
@@ -57,36 +58,34 @@ export default function NewFeature() {
   };
 
   return (
-    <div className="container max-w-2xl mx-auto py-6">
+    <div className="container max-w-3xl py-10">
       <Card>
         <CardHeader>
           <CardTitle>Generate New Feature</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">Feature Title</Label>
-              <Input 
+              <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter feature title"
+                placeholder="Enter a title for the feature"
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="story">User Story</Label>
-              <Textarea 
+              <Textarea
                 id="story"
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
-                placeholder="As a [role] I want to [action] So that [benefit]"
+                placeholder="As a [role], I want to [action], So that [benefit]"
+                rows={6}
                 required
-                rows={4}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="scenarioCount">Number of Scenarios</Label>
               <Select
@@ -110,19 +109,9 @@ export default function NewFeature() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="flex gap-2">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Feature"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/")}
-              >
-                Cancel
-              </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Generating..." : "Generate Feature"}
+            </Button>
           </form>
         </CardContent>
       </Card>

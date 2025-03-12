@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { requireAuth } from "./auth";
 import { FeatureFilter } from "@shared/schema";
+import { generateFeature, analyzeFeature, analyzeFeatureComplexity, suggestTitle } from "./openai";
+import { Feature } from "@shared/schema";
+import JSZip from "jszip";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Features routes
