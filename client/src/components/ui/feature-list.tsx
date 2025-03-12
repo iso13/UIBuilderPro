@@ -1,123 +1,94 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Trash, Copy, Edit, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Feature } from '@shared/schema';
 
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Feature } from "@/types/features";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Copy, Edit, Pencil, Plus, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Badge } from "./badge";
+interface FeatureListProps {
+  features: Feature[];
+  onDelete?: (id: number) => void;
+  onCopy?: (id: number) => void;
+  onEdit?: (id: number) => void;
+  onView?: (id: number) => void;
+}
 
-export function FeatureList() {
-  const [, navigate] = useLocation();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+export function FeatureList({ features, onDelete, onCopy, onEdit, onView }: FeatureListProps) {
+  const navigate = useNavigate();
 
-  const { data: features = [], isLoading } = useQuery({
-    queryKey: ["/api/features"],
-    queryFn: async () => {
-      const data = await apiRequest("GET", "/api/features");
-      return data;
-    },
-  });
+  const handleView = (id: number) => {
+    if (onView) {
+      onView(id);
+    } else {
+      navigate(`/features/${id}`);
+    }
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/features/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-      toast({
-        title: "Feature deleted",
-        description: "The feature has been moved to trash",
-      });
-    },
-  });
-
-  const copyFeature = async (feature: Feature) => {
-    try {
-      await apiRequest("POST", "/api/features", {
-        title: `${feature.title} (Copy)`,
-        story: feature.story,
-        scenarios: feature.scenarios,
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-      
-      toast({
-        title: "Feature copied",
-        description: "A copy of the feature has been created",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "There was an error copying the feature",
-        variant: "destructive",
-      });
+  const handleEdit = (id: number) => {
+    if (onEdit) {
+      onEdit(id);
+    } else {
+      navigate(`/edit/${id}`);
     }
   };
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      {isLoading ? (
-        <p>Loading features...</p>
-      ) : features.length === 0 ? (
-        <p>No features found.</p>
-      ) : (
-        features.map((feature) => (
-          <Card
-            key={feature.id}
-            className="overflow-hidden border border-white/10 bg-zinc-800 backdrop-blur"
-          >
-            <CardContent className="p-4">
-              <div className="flex flex-col h-full">
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg leading-none tracking-tight text-white">
-                      {feature.title}
-                    </h3>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-white/10"
-                        onClick={() => copyFeature(feature)}
-                        title="Copy feature"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-white/10"
-                        onClick={() => navigate(`/edit/${feature.id}`)}
-                        title="Edit feature"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-white/10 text-red-500 hover:text-red-400"
-                        onClick={() => deleteMutation.mutate(feature.id)}
-                        title="Delete feature"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="px-1.5 text-xs">
-                    {feature.scenarioCount} scenarios
-                  </Badge>
-                  <p className="text-sm text-gray-400 mt-2">{feature.story}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {features.map((feature) => (
+        <Card key={feature.id} className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="truncate text-xl">{feature.title}</CardTitle>
+            <CardDescription className="text-sm text-gray-500">{feature.scenarioCount || 0} scenarios</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <p className="text-sm text-gray-600 line-clamp-3">{feature.story}</p>
+          </CardContent>
+          <CardFooter className="flex justify-between pt-2 border-t">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleView(feature.id)}
+                title="View"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleEdit(feature.id)}
+                  title="Edit"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {onCopy && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onCopy(feature.id)}
+                  title="Duplicate"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onDelete(feature.id)}
+                  title="Delete"
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </CardFooter>
+        </Card>
+      ))}
     </div>
   );
 }
