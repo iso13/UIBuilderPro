@@ -272,13 +272,11 @@ export function FeatureList() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 hover:bg-white/10 text-red-500 hover:text-red-400"
-                            onClick={() => deleteFeature(feature)}
+                            onClick={() => deleteMutation.mutate(feature.id)}
                             title="Delete feature"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                            className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => deleteMutation.mutate(feature.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
