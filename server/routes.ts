@@ -19,6 +19,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // Admin route - delete a feature
+  app.delete("/api/admin/features/:id", requireAdmin, async (req, res) => {
+    try {
+      const featureId = parseInt(req.params.id, 10);
+      if (isNaN(featureId)) {
+        return res.status(400).json({ message: "Invalid feature ID" });
+      }
+      
+      const feature = await storage.getFeature(featureId);
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+      
+      const deletedFeature = await storage.softDeleteFeature(featureId);
+      
+      // Track deletion in analytics
+      await storage.trackEvent({
+        eventType: "feature_deletion",
+        successful: true,
+        errorMessage: null,
+      });
+      
+      res.json(deletedFeature);
+    } catch (error: any) {
+      console.error("Error deleting feature:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Admin route - restore a deleted feature
+  app.post("/api/admin/features/:id/restore", requireAdmin, async (req, res) => {
+    try {
+      const featureId = parseInt(req.params.id, 10);
+      if (isNaN(featureId)) {
+        return res.status(400).json({ message: "Invalid feature ID" });
+      }
+      
+      const feature = await storage.getFeature(featureId);
+      if (!feature) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+      
+      const restoredFeature = await storage.restoreFeature(featureId);
+      res.json(restoredFeature);
+    } catch (error: any) {
+      console.error("Error restoring feature:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   app.post("/api/features/generate", requireAuth, async (req, res) => {
     try {

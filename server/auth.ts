@@ -16,6 +16,27 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     return res.status(401).json({ message: "Authentication required" });
   }
   next();
+
+// Admin middleware
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  // Get the user to check if they're an admin
+  storage.getUser(req.session.userId)
+    .then(user => {
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ message: "Admin privileges required" });
+      }
+      next();
+    })
+    .catch(error => {
+      console.error("Admin middleware error:", error);
+      res.status(500).json({ message: "Server error checking admin privileges" });
+    });
+};
+
 };
 
 // Authentication routes
