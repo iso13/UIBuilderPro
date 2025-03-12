@@ -19,9 +19,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const filter = (req.query.filter as FeatureFilter) || "active";
 
-      const features = await storage.getFeatures(userId, filter);
-      res.json(features);
+      try {
+        const features = await storage.getFeatures(userId, filter);
+        res.json(features);
+      } catch (error: any) {
+        console.error("Error fetching features:", error);
+        res.status(500).json({ message: "Failed to fetch features" });
+      }
     } catch (error: any) {
+      console.error("Error in /api/features route:", error);
       res.status(500).json({ message: error.message });
     }
   });

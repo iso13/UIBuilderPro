@@ -1,5 +1,4 @@
-
-import { features, analytics, users, type Feature, type InsertFeature, type Analytics, type InsertAnalytics, type User } from "@shared/schema";
+import { features, analytics, users, type Feature, type InsertFeature, type Analytics, type User } from "@shared/schema";
 import { eq, ilike } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -26,11 +25,14 @@ export interface IStorage {
   restoreFeature(id: number): Promise<Feature>;
   findFeatureByTitle(title: string): Promise<Feature | undefined>;
   permanentlyDeleteFeature(id: number): Promise<boolean>;
+  getFeatures(userId: number, filter: FeatureFilter): Promise<Feature[]>; // Added getFeatures method
 
   // Analytics
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
   getAnalytics(userId?: number): Promise<Analytics[]>;
 }
+
+type FeatureFilter = "active" | "deleted" | "all";
 
 export class PostgresStorage implements IStorage {
   // User management methods
@@ -125,6 +127,18 @@ export class PostgresStorage implements IStorage {
       return await db.select().from(analytics).where(eq(analytics.userId, userId)).orderBy(analytics.createdAt);
     }
     return await db.select().from(analytics).orderBy(analytics.createdAt);
+  }
+
+  async getFeatures(userId: number, filter: FeatureFilter = "all"): Promise<Feature[]> {
+    const query = db.select().from(features);
+
+    if (filter === "active") {
+      return await query.where(eq(features.deleted, false));
+    } else if (filter === "deleted") {
+      return await query.where(eq(features.deleted, true));
+    }
+
+    return await query;
   }
 }
 
