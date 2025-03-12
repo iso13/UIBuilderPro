@@ -1,104 +1,101 @@
+
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, SortAsc, MoreVertical, Archive, Download, Trash2, RefreshCw } from "lucide-react";
+import { Search, SortAsc, MoreVertical, Archive, RefreshCw, Trash2, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 
-
-// Placeholder for toast if not available
-const useToast = () => {
-  return {
-    toast: (params: any) => console.log("Toast:", params)
-  };
-};
-
-function Home() {
-  const [location, navigate] = useLocation();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+export default function Home() {
+  const [navigate, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [showArchived, setShowArchived] = useState(false);
   const [userRole, setUserRole] = useState<string>("user");
-
-  // Fetch user data to determine role
-  const { data: userData } = useQuery({
-    queryKey: ["user"],
-    queryFn: async () => {
-      const res = await fetch("/api/user");
-      if (!res.ok) throw new Error("Failed to fetch user data");
-      return res.json();
-    }
-  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (userData) {
-      setUserRole(userData.isAdmin ? "admin" : "user");
-    }
-  }, [userData]);
+    // Get user role
+    fetch("/api/user")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.role) {
+          setUserRole(data.role);
+        }
+      })
+      .catch((error) => console.error("Error fetching user role:", error));
+  }, []);
 
-  // Fetch features data
-  const { data: features = [] } = useQuery({
+  // Fetch features
+  const { data: features = [], isLoading, error } = useQuery({
     queryKey: ["features", showArchived],
     queryFn: async () => {
-      const res = await fetch(`/api/features?archived=${showArchived}`);
+      const res = await fetch(`/api/features?includeDeleted=${showArchived}`);
       if (!res.ok) throw new Error("Failed to fetch features");
       return res.json();
-    }
+    },
   });
 
   // Archive/restore mutation
   const archiveMutation = useMutation({
     mutationFn: async ({ id, archived }: { id: number; archived: boolean }) => {
-      const res = await fetch(`/api/features/${id}/archive`, {
+      const endpoint = archived ? `/api/features/${id}/restore` : `/api/features/${id}/delete`;
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ archived })
       });
-      if (!res.ok) throw new Error("Failed to update feature");
+      if (!res.ok) throw new Error(`Failed to ${archived ? "restore" : "archive"} feature`);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["features"] });
       toast({
-        title: "Feature updated",
-        description: "The feature has been updated successfully",
+        title: "Success",
+        description: "Feature status updated",
       });
-    }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  // Delete mutation (for admin)
+  // Permanent delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`/api/features/${id}`, {
-        method: "DELETE"
+      const res = await fetch(`/api/features/${id}/permanent`, {
+        method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete feature");
+      if (!res.ok) throw new Error("Failed to delete feature permanently");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["features"] });
       toast({
-        title: "Feature deleted",
-        description: "The feature has been permanently deleted",
+        title: "Success",
+        description: "Feature permanently deleted",
       });
-    }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  // Export features
   const handleExport = async () => {
     try {
       const res = await fetch(`/api/features/export?showArchived=${showArchived}`);
       if (!res.ok) throw new Error("Failed to export features");
-
+      
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -108,35 +105,34 @@ function Home() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
+      
       toast({
         title: "Features exported",
         description: "All features have been exported as a zip file",
       });
-    } catch (error) {
-      console.error("Export error:", error);
+    } catch (error: any) {
       toast({
         title: "Export failed",
-        description: "Failed to export features",
+        description: error.message,
         variant: "destructive",
       });
     }
   };
 
-  // Sort features
-  const sortedFeatures = [...features].sort((a, b) => {
-    if (sortBy === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (sortBy === "oldest") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (sortBy === "a-z") return a.title.localeCompare(b.title);
-    if (sortBy === "z-a") return b.title.localeCompare(a.title);
-    return 0;
-  });
-
-  // Filter features by search term
-  const filteredFeatures = sortedFeatures.filter(feature =>
-    feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    feature.story.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter and sort features
+  const filteredFeatures = features
+    .filter((feature: any) => {
+      return (
+        feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        feature.story.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    })
+    .sort((a: any, b: any) => {
+      if (sortOrder === "asc") {
+        return a.title.localeCompare(b.title);
+      }
+      return b.title.localeCompare(a.title);
+    });
 
   return (
     <div className="container mx-auto py-6">
@@ -152,73 +148,85 @@ function Home() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-          <Input
-            type="text"
-            placeholder="Search features..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="sort" className="whitespace-nowrap">Sort by:</Label>
-          <select
-            id="sort"
-            className="border rounded px-2 py-1"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-          >
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="a-z">A-Z</option>
-            <option value="z-a">Z-A</option>
-          </select>
-          <Label className="flex items-center gap-1 ml-4">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-              className="rounded"
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex-1">
+          <Label htmlFor="search">Search Features</Label>
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="search"
+              placeholder="Search by title or description..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
-            Show Archived
-          </Label>
+          </div>
+        </div>
+        <div className="flex gap-4">
+          <div>
+            <Label htmlFor="sort">Sort Order</Label>
+            <Button
+              id="sort"
+              variant="outline"
+              className="flex w-full items-center justify-between"
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            >
+              <span>Sort {sortOrder === "asc" ? "A-Z" : "Z-A"}</span>
+              <SortAsc className={`h-4 w-4 ${sortOrder === "desc" ? "rotate-180" : ""}`} />
+            </Button>
+          </div>
+          <div>
+            <Label htmlFor="archived">Show Archived</Label>
+            <Button
+              id="archived"
+              variant="outline"
+              className={`flex w-full items-center justify-between ${
+                showArchived ? "border-blue-500 text-blue-500" : ""
+              }`}
+              onClick={() => setShowArchived(!showArchived)}
+            >
+              {showArchived ? "Showing All" : "Active Only"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {filteredFeatures.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No features found</div>
+      <div className="grid gap-4">
+        {isLoading ? (
+          <div className="text-center py-8">Loading features...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-500">Error loading features</div>
+        ) : filteredFeatures.length === 0 ? (
+          <div className="text-center py-8">No features found</div>
         ) : (
-          filteredFeatures.map((feature) => (
+          filteredFeatures.map((feature: any) => (
             <div
               key={feature.id}
-              className={`border rounded-lg p-4 hover:shadow-md transition-all ${feature.archived ? 'bg-gray-100 border-gray-300' : ''}`}
+              className={`rounded-lg border p-4 ${
+                feature.archived ? "bg-gray-50 border-gray-200" : ""
+              }`}
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <h3 className={`text-lg font-semibold ${feature.archived ? "text-gray-500" : ""}`}>
                     {feature.title}
                     {feature.archived && (
-                      <span className="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded">
+                      <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
                         Archived
                       </span>
                     )}
-                  </h2>
-                  <p className="text-gray-600 my-2">{feature.story}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {feature.tags?.split(',').map((tag, index) => (
-                      <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                        {tag.trim()}
-                      </span>
-                    ))}
+                  </h3>
+                  <p className={`mt-1 text-sm ${feature.archived ? "text-gray-500" : "text-gray-600"}`}>
+                    {feature.story}
+                  </p>
+                  <div className="mt-2 text-xs text-gray-400">
+                    {feature.scenarioCount} scenarios • Last updated:{" "}
+                    {new Date(feature.updatedAt).toLocaleDateString()}
                   </div>
                 </div>
                 <div className="flex space-x-1">
                   <Button
-                    onClick={() => navigate(`/view/${feature.id}`)}
+                    onClick={() => navigate(`/features/${feature.id}`)}
                     variant="ghost"
                     size="sm"
                   >
@@ -256,5 +264,3 @@ function Home() {
     </div>
   );
 }
-
-export default Home;
