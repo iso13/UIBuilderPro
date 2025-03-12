@@ -6,8 +6,6 @@ import { UserProvider } from "@/contexts/user-context";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Home from "./pages/home";
-import NewFeature from "./pages/new";
-import EditFeature from "./pages/edit";
 import NotFound from "./pages/not-found";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -67,8 +65,12 @@ function AuthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/new" component={NewFeature} />
-      <Route path="/edit/:id" component={EditFeature} />
+      <Route path="/edit/:id">
+        {(params) => <div>Edit Feature {params.id}</div>}
+      </Route>
+      <Route path="/new">
+        {() => <div>New Feature</div>}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

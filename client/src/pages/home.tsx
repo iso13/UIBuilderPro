@@ -27,9 +27,9 @@ export default function Home() {
   const [selectedFeatures, setSelectedFeatures] = useState<number[]>([]);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  const { data: features = [], refetch } = useQuery<any[]>([
-    `/api/features${showDeleted ? '?includeDeleted=true' : ''}`,
-  ]);
+  const { data: features = [], refetch } = useQuery<any[]>({
+    queryKey: [`/api/features${showDeleted ? '?includeDeleted=true' : ''}`],
+  });
 
   const handleExportMultiple = async () => {
     if (selectedFeatures.length === 0) {
@@ -45,158 +45,146 @@ export default function Home() {
       const response = await apiRequest("POST", "/api/features/export-multiple", {
         featureIds: selectedFeatures,
       });
-
-      // Create a download link for the zip file
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      
+      // Create a blob from the response data
+      const blob = new Blob([JSON.stringify(response, null, 2)], {
+        type: "application/json",
+      });
+      
+      // Create a download link and trigger the download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'features.zip';
+      a.download = "features.json";
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
+      URL.revokeObjectURL(url);
+      
       toast({
-        title: "Features exported successfully",
-        description: `${selectedFeatures.length} features exported as zip`,
+        title: "Features exported",
+        description: `Successfully exported ${selectedFeatures.length} features`,
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Export failed",
-        description: error.message || "Failed to export features",
+        description: "There was an error exporting the features",
         variant: "destructive",
       });
     }
   };
 
-  const handleToggleFeature = (id: number) => {
-    setSelectedFeatures((prev) =>
-      prev.includes(id)
-        ? prev.filter((featureId) => featureId !== id)
-        : [...prev, id]
-    );
-  };
-
-  const toggleShowDeleted = () => {
-    setShowDeleted(!showDeleted);
-  };
-
-  const handleFeatureAction = async (id: number, action: 'delete' | 'restore') => {
+  const handleDeleteFeature = async (id: number) => {
     try {
-      await apiRequest("POST", `/api/features/${id}/${action}`, {});
+      await apiRequest("DELETE", `/api/features/${id}`);
       refetch();
       toast({
-        title: action === 'delete' ? "Feature deleted" : "Feature restored",
-        description: action === 'delete' 
-          ? "The feature has been moved to trash" 
-          : "The feature has been restored",
+        title: "Feature deleted",
+        description: "The feature was successfully deleted",
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
-        title: "Action failed",
-        description: error.message,
+        title: "Delete failed",
+        description: "There was an error deleting the feature",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRestoreFeature = async (id: number) => {
+    try {
+      await apiRequest("PUT", `/api/features/${id}/restore`);
+      refetch();
+      toast({
+        title: "Feature restored",
+        description: "The feature was successfully restored",
+      });
+    } catch (error) {
+      toast({
+        title: "Restore failed",
+        description: "There was an error restoring the feature",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <div className="container py-8">
+    <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold">Feature Management</h1>
       <div className="flex space-x-2">
         <Button onClick={() => navigate("/new")} className="bg-blue-600 hover:bg-blue-700">
-          Generate New Feature
+          <Plus className="mr-2 h-4 w-4" /> Generate New Feature
         </Button>
+        
+        <Button onClick={handleExportMultiple} variant="outline">
+          <Download className="mr-2 h-4 w-4" /> Export Selected
+        </Button>
+        
+        <Button onClick={() => refetch()} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+        </Button>
+        
+        <div className="flex items-center space-x-2 ml-auto">
+          <Checkbox 
+            id="showDeleted" 
+            checked={showDeleted} 
+            onCheckedChange={(checked) => setShowDeleted(checked === true)}
+          />
+          <label htmlFor="showDeleted" className="text-sm">Show deleted</label>
+        </div>
       </div>
 
-      <div className="mt-6">
-        <div className="flex justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="show-deleted"
-              checked={showDeleted}
-              onCheckedChange={toggleShowDeleted}
-            />
-            <label htmlFor="show-deleted" className="text-sm">
-              Show deleted features
-            </label>
-          </div>
-          
-          {selectedFeatures.length > 0 && (
-            <Button variant="outline" onClick={handleExportMultiple}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Selected
-            </Button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {features.map((feature) => (
-            <div
-              key={feature.id}
-              className={`border p-4 rounded-lg ${
-                feature.deleted ? "opacity-70 bg-gray-50" : ""
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex items-start space-x-2">
-                  {!feature.deleted && (
-                    <Checkbox
-                      checked={selectedFeatures.includes(feature.id)}
-                      onCheckedChange={() => handleToggleFeature(feature.id)}
-                      id={`feature-${feature.id}`}
-                    />
-                  )}
-                  <div>
-                    <h3 className="font-medium">{feature.title}</h3>
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                      {feature.story}
-                    </p>
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+        {features.map((feature: any) => (
+          <div 
+            key={feature.id} 
+            className={`border rounded-lg p-4 ${feature.isDeleted ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-2">
+                <Checkbox 
+                  checked={selectedFeatures.includes(feature.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedFeatures([...selectedFeatures, feature.id]);
+                    } else {
+                      setSelectedFeatures(selectedFeatures.filter(id => id !== feature.id));
+                    }
+                  }}
+                  disabled={feature.isDeleted}
+                />
+                <div>
+                  <h3 className="font-medium">{feature.name}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{feature.description}</p>
                 </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreVertical className="h-4 w-4" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {!feature.deleted ? (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate(`/edit/${feature.id}`)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleFeatureAction(feature.id, 'delete')}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </>
-                    ) : (
-                      <DropdownMenuItem onClick={() => handleFeatureAction(feature.id, 'restore')}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Restore
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {!feature.isDeleted ? (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate(`/edit/${feature.id}`)}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDeleteFeature(feature.id)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem onClick={() => handleRestoreFeature(feature.id)}>
+                      <RefreshCw className="mr-2 h-4 w-4" /> Restore
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          ))}
-        </div>
-        
-        {features.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-gray-500">
-              {showDeleted 
-                ? "No deleted features found" 
-                : "No features yet. Create your first feature!"}
-            </p>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
