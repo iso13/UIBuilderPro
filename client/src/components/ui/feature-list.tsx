@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "./card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -14,8 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { MoreVertical } from "lucide-react";
+import { Copy, Trash2, Edit, MoreVertical } from "lucide-react";
 import type { Feature } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
@@ -23,13 +25,81 @@ export function FeatureList() {
   const [title, setTitle] = useState("");
   const [story, setStory] = useState("");
   const [scenarioCount, setScenarioCount] = useState("1");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/features/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Feature deleted",
+        description: "The feature has been moved to trash",
+      });
+    },
+  });
+
+  const copyFeature = async (feature: Feature) => {
+    try {
+      await apiRequest("POST", "/api/features", {
+        title: `${feature.title} (Copy)`,
+        story: feature.story,
+        scenarioCount: feature.scenarioCount,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Feature copied",
+        description: "A copy of the feature has been created",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy feature",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleGenerateFeature = async () => {
-    // Handle feature generation
+    if (!title || !story) {
+      toast({
+        title: "Missing information",
+        description: "Please provide a title and story for the feature",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await apiRequest("POST", "/api/features", {
+        title,
+        story,
+        scenarioCount: parseInt(scenarioCount),
+      });
+
+      toast({
+        title: "Success",
+        description: "Feature generated successfully",
+      });
+
+      setTitle("");
+      setStory("");
+      setScenarioCount("1");
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate feature",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -135,8 +205,29 @@ export function FeatureList() {
                       <div className="flex justify-between items-start">
                         <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
                         <div className="flex gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-5 w-5" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-white/10"
+                            onClick={() => copyFeature(feature)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-white/10"
+                            onClick={() => deleteMutation.mutate(feature.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-white/10"
+                            onClick={() => navigate(`/edit/${feature.id}`)}
+                          >
+                            <Edit className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
