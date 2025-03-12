@@ -1,9 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Search, SortAsc, MoreVertical as MoreVerticalIcon } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+// Placeholder for useToast -  replace with actual implementation
+const useToast = () => ({ toast: (params) => console.log("Toast:", params) });
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -181,7 +182,7 @@ function Home() {
     try {
       const res = await fetch(`/api/features/export?showArchived=${showArchived}`);
       if (!res.ok) throw new Error("Failed to export features");
-      
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -191,7 +192,7 @@ function Home() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast({
         title: "Features exported",
         description: "All features have been exported as a zip file",
