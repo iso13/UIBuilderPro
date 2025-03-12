@@ -8,10 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 import type { Feature } from "@shared/schema";
 
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
+  const [, navigate] = useLocation();
 
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
@@ -20,8 +23,9 @@ export function FeatureList() {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Generated Features</CardTitle>
+          <Button onClick={() => navigate("/new")}>Generate New Feature</Button>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -37,8 +41,9 @@ export function FeatureList() {
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Generated Features</CardTitle>
+          <Button onClick={() => navigate("/new")}>Generate New Feature</Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -13,16 +12,16 @@ export default function NewFeature() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState("");
+  const [story, setStory] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!name || !description) {
+
+    if (!title || !story) {
       toast({
         title: "Missing information",
-        description: "Please provide a name and description for the feature",
+        description: "Please provide a title and story for the feature",
         variant: "destructive",
       });
       return;
@@ -32,15 +31,16 @@ export default function NewFeature() {
 
     try {
       await apiRequest("POST", "/api/features", {
-        name,
-        description,
+        title,
+        story,
+        scenarios: "",
       });
-      
+
       toast({
         title: "Feature created",
         description: "The feature was successfully created",
       });
-      
+
       navigate("/");
     } catch (error) {
       toast({
@@ -54,7 +54,7 @@ export default function NewFeature() {
   };
 
   return (
-    <div className="container max-w-md mx-auto py-6">
+    <div className="container max-w-2xl mx-auto py-6">
       <Card>
         <CardHeader>
           <CardTitle>Generate New Feature</CardTitle>
@@ -62,28 +62,28 @@ export default function NewFeature() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Feature Name</Label>
+              <Label htmlFor="title">Feature Title</Label>
               <Input 
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter feature name"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter feature title"
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="story">User Story</Label>
               <Textarea 
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe what this feature does"
+                id="story"
+                value={story}
+                onChange={(e) => setStory(e.target.value)}
+                placeholder="As a [role] I want to [action] So that [benefit]"
                 required
                 rows={4}
               />
             </div>
-            
+
             <div className="flex gap-2">
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? "Creating..." : "Create Feature"}
