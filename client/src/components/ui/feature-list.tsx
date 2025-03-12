@@ -33,6 +33,50 @@ export function FeatureList() {
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
   });
+  
+  // Function to copy feature content to clipboard
+  const copyFeature = async (feature: Feature) => {
+    if (feature.generatedContent) {
+      await navigator.clipboard.writeText(feature.generatedContent);
+      toast({
+        title: "Copied to clipboard",
+        description: `Feature "${feature.title}" copied to clipboard`,
+        variant: "default",
+      });
+    }
+  };
+  
+  // Function to navigate to feature edit page
+  const editFeature = (feature: Feature) => {
+    navigate(`/feature/${feature.id}`);
+  };
+  
+  // Function to delete a feature
+  const deleteFeature = async (feature: Feature) => {
+    if (confirm(`Are you sure you want to delete "${feature.title}"?`)) {
+      try {
+        await apiRequest({
+          url: `/api/features/${feature.id}`,
+          method: 'DELETE',
+        });
+        
+        toast({
+          title: "Feature deleted",
+          description: `"${feature.title}" has been moved to trash`,
+          variant: "default",
+        });
+        
+        // Refresh the features list
+        queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete feature",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -194,19 +238,45 @@ export function FeatureList() {
                   <Card className="bg-black hover:bg-black/70 transition-colors cursor-pointer h-full">
                     <div className="p-6">
                       <div className="flex justify-between items-start">
-                        <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                        <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                        {feature.story}
+                      </p>
+                      <div className="text-xs text-muted-foreground mt-auto flex items-center gap-2">
+                        <span className="text-primary">
+                          {feature.scenarioCount || 0} scenarios
+                        </span>
+                        <span>•</span>
+                        <span>{new Date(feature.createdAt).toLocaleDateString()}</span>
+                      </div>
                         <div className="flex gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 hover:bg-white/10"
                             onClick={() => copyFeature(feature)}
+                            title="Copy feature"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8 hover:bg-white/10"
+                            onClick={() => editFeature(feature)}
+                            title="Edit feature"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-white/10 text-red-500 hover:text-red-400"
+                            onClick={() => deleteFeature(feature)}
+                            title="Delete feature"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                             className="h-8 w-8 hover:bg-white/10"
                             onClick={() => deleteMutation.mutate(feature.id)}
                           >
