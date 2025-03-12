@@ -67,13 +67,17 @@ export class PostgresStorage implements IStorage {
   async getAllFeatures(includeDeleted: boolean = false): Promise<Feature[]> {
     console.log("Getting all features, includeDeleted:", includeDeleted); // Debug log
     try {
-      const query = db.select().from(features);
+      let query = db.select().from(features);
+
       if (!includeDeleted) {
-        query.where(eq(features.deleted, false));
+        query = query.where(eq(features.deleted, false));
       }
+
       const result = await query;
       console.log("Features query result:", result); // Debug log
-      return result;
+
+      // Ensure we return an empty array if no results
+      return result || [];
     } catch (error) {
       console.error("Error in getAllFeatures:", error);
       return [];

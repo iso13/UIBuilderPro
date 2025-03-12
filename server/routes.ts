@@ -16,18 +16,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filter = (req.query.filter as FeatureFilter) || "active";
       console.log("Fetching features with filter:", filter); // Debug log
 
-      const features = await storage.getAllFeatures(filter === "all");
-      console.log("Features retrieved:", features); // Debug log
+      // Directly use getAllFeatures from storage
+      let features = await storage.getAllFeatures(filter === "all");
 
-      if (!Array.isArray(features)) {
-        console.error("Features is not an array:", features);
-        return res.status(500).json({ message: "Invalid features data format" });
-      }
+      // Ensure we always return an array
+      features = Array.isArray(features) ? features : [];
 
+      console.log("Features to return:", features); // Debug log
       return res.json(features);
     } catch (error: any) {
       console.error("Error fetching features:", error);
-      res.status(500).json({ message: "Failed to fetch features" });
+      return res.status(500).json({ message: "Failed to fetch features" });
     }
   });
 
