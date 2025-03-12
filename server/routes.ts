@@ -1,257 +1,237 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity } from "./openai";
-import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
+import { generateFeature } from "./openai";
+import { Feature, FeatureFilter } from "@shared/schema";
 import fs from "fs-extra";
 import path from "path";
-import { requireAuth, requireAdmin } from "./auth";
+import { requireAuth } from "./auth";
 import JSZip from 'jszip';
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Protected route - only authenticated users can access features
-  app.get("/api/features", requireAuth, async (_req, res) => {
+  // Features routes
+  app.get("/api/features", requireAuth, async (req: Request, res: Response) => {
     try {
-      const includeDeleted = _req.query.includeDeleted === 'true';
-      const features = await storage.getAllFeatures(includeDeleted);
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const filter = (req.query.filter as FeatureFilter) || "active";
+
+      const features = await storage.getFeatures(userId, filter);
       res.json(features);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  // Admin route - delete a feature
-  app.delete("/api/admin/features/:id", requireAdmin, async (req, res) => {
+  app.get("/api/features/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const featureId = parseInt(req.params.id, 10);
-      if (isNaN(featureId)) {
-        return res.status(400).json({ message: "Invalid feature ID" });
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const feature = await storage.getFeature(featureId);
+      const feature = await storage.getFeature(req.params.id);
+
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      const deletedFeature = await storage.softDeleteFeature(featureId);
-
-      // Track deletion in analytics
-      await storage.trackEvent({
-        eventType: "feature_deletion",
+      // Log feature view
+      await storage.logAnalyticsEvent({
+        userId,
+        eventType: "feature_view",
+        featureId: feature.id,
         successful: true,
         errorMessage: null,
+        scenarioCount: null,
       });
 
-      res.json(deletedFeature);
+      res.json(feature);
     } catch (error: any) {
-      console.error("Error deleting feature:", error);
       res.status(500).json({ message: error.message });
     }
   });
 
-  // Admin route - restore a deleted feature
-  app.post("/api/admin/features/:id/restore", requireAdmin, async (req, res) => {
+  app.post("/api/features", requireAuth, async (req: Request, res: Response) => {
     try {
-      const featureId = parseInt(req.params.id, 10);
-      if (isNaN(featureId)) {
-        return res.status(400).json({ message: "Invalid feature ID" });
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const feature = await storage.getFeature(featureId);
-      if (!feature) {
-        return res.status(404).json({ message: "Feature not found" });
-      }
+      const { title, description } = req.body;
 
-      const restoredFeature = await storage.restoreFeature(featureId);
-      res.json(restoredFeature);
-    } catch (error: any) {
-      console.error("Error restoring feature:", error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/features/generate", requireAuth, async (req, res) => {
-    try {
-      const data = insertFeatureSchema.parse(req.body);
-
-      // Check for duplicate title
-      const existingFeature = await storage.findFeatureByTitle(data.title);
-      if (existingFeature) {
-        return res.status(400).json({ 
-          message: "A feature with this title already exists. Please use a different title." 
-        });
-      }
-
-      // Track generation attempt
-      const analyticsEvent = {
-        eventType: "feature_generation",
-        scenarioCount: data.scenarioCount,
-        successful: false,
-        errorMessage: null,
-      };
+      // Generate feature using OpenAI
+      let featureData: Partial<Feature>;
+      let successful = true;
+      let errorMessage = null;
+      let scenarioCount = 0;
 
       try {
-        const generatedContent = await generateFeature(
-          data.title,
-          data.story,
-          data.scenarioCount
-        );
-
-        const feature = await storage.createFeature({
-          ...data,
-          generatedContent,
-          manuallyEdited: false,
-        });
-
-        // Update analytics with success
-        analyticsEvent.successful = true;
-        await storage.trackEvent(analyticsEvent);
-
-        res.json(feature);
+        featureData = await generateFeature(title, description);
+        scenarioCount = featureData.scenarios?.length || 0;
       } catch (error: any) {
-        // Update analytics with error
-        analyticsEvent.errorMessage = error.message;
-        await storage.trackEvent(analyticsEvent);
-        throw error;
-      }
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  });
-
-  app.patch("/api/features/:id", requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const data = updateFeatureSchema.parse(req.body);
-
-      // Get the current feature
-      const currentFeature = await storage.getFeature(id);
-      if (!currentFeature) {
-        return res.status(404).json({ message: "Feature not found" });
+        successful = false;
+        errorMessage = error.message;
+        featureData = {
+          title,
+          story: description,
+          scenarios: [],
+        };
       }
 
-      // If title is being changed, check for duplicates
-      if (data.title && data.title !== currentFeature.title) {
-        const existingFeature = await storage.findFeatureByTitle(data.title);
-        if (existingFeature && existingFeature.id !== id) {
-          return res.status(400).json({ 
-            message: "A feature with this title already exists. Please use a different title." 
-          });
-        }
-      }
+      // Save feature to database
+      const feature = await storage.createFeature({
+        ...featureData,
+        userId,
+      });
 
-      // If scenarioCount changed or title changed, always regenerate
-      if ((data.scenarioCount && data.scenarioCount !== currentFeature.scenarioCount) ||
-          (data.title && data.title !== currentFeature.title)) {
-        // First update the feature's basic info
-        await storage.updateFeature(id, {
-          title: data.title,
-          story: data.story,
-          scenarioCount: data.scenarioCount,
-        });
-
-        // Then regenerate content with updated information
-        const generatedContent = await generateFeature(
-          data.title || currentFeature.title,
-          data.story || currentFeature.story,
-          data.scenarioCount || currentFeature.scenarioCount
-        );
-
-        const feature = await storage.updateFeature(id, {
-          generatedContent,
-          manuallyEdited: false,
-        });
-
-        return res.json(feature);
-      }
-
-      // Regular update without regenerating content
-      const feature = await storage.updateFeature(id, {
-        ...data,
-        manuallyEdited: data.generatedContent ? true : currentFeature.manuallyEdited,
+      // Log analytics event
+      await storage.logAnalyticsEvent({
+        userId,
+        eventType: "feature_generation",
+        featureId: feature.id,
+        successful,
+        errorMessage,
+        scenarioCount,
       });
 
       res.json(feature);
     } catch (error: any) {
-      console.error('Error updating feature:', error);
-      res.status(400).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/features/:id/delete", requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const feature = await storage.softDeleteFeature(id);
-      if (!feature) {
-        return res.status(404).json({ message: "Feature not found" });
-      }
-      res.json(feature);
-    } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.post("/api/features/:id/restore", requireAuth, async (req, res) => {
+  app.put("/api/features/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const id = parseInt(req.params.id);
-      const feature = await storage.restoreFeature(id);
-      if (!feature) {
-        return res.status(404).json({ message: "Feature not found" });
-      }
-      res.json(feature);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.delete("/api/features/:id/permanent", requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-
-      // Get the current user from session
       const userId = req.session.userId;
-      const user = await storage.getUser(userId!);
-
-      // Only allow admins to permanently delete features
-      if (!user || !user.isAdmin) {
-        return res.status(403).json({ message: "Only admins can permanently delete features" });
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const success = await storage.permanentlyDeleteFeature(id);
-      if (!success) {
-        return res.status(404).json({ message: "Feature not found" });
-      }
+      const { title, story, scenarios } = req.body;
 
-      res.json({ success: true, message: "Feature permanently deleted" });
+      const feature = await storage.updateFeature(req.params.id, {
+        title,
+        story,
+        scenarios,
+      });
+
+      res.json(feature);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.get("/api/features/export/:id", requireAuth, async (req, res) => {
+  app.delete("/api/features/:id", requireAuth, async (req: Request, res: Response) => {
     try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      await storage.softDeleteFeature(req.params.id);
+      res.json({ message: "Feature moved to trash" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/:id/restore", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      await storage.restoreFeature(req.params.id);
+      res.json({ message: "Feature restored" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+
+  app.get("/api/analytics", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const analytics = await storage.getAnalytics(userId);
+      res.json(analytics);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/features/:id/analyze", requireAuth, async (req: Request, res: Response) => {
+      try {
+          const id = parseInt(req.params.id);
+          const feature = await storage.getFeature(id);
+
+          if (!feature) {
+              return res.status(404).json({ message: "Feature not found" });
+          }
+
+          if (!feature.generatedContent) {
+              return res.status(400).json({ message: "Feature has no content to analyze" });
+          }
+
+          const analysis = await analyzeFeature(feature.generatedContent, feature.title);
+          res.json(analysis);
+      } catch (error: any) {
+          res.status(500).json({ message: error.message });
+      }
+  });
+
+  app.post("/api/features/:id/complexity", requireAuth, async (req: Request, res: Response) => {
+    try {
+      console.log(`Analyzing complexity for feature ${req.params.id}`);
       const id = parseInt(req.params.id);
       const feature = await storage.getFeature(id);
 
       if (!feature) {
+        console.log(`Feature ${id} not found`);
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      // Format the feature content for download
-      const content = feature.generatedContent;
-      const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.doc`;
+      if (!feature.generatedContent) {
+        console.log(`Feature ${id} has no content to analyze`);
+        return res.status(400).json({ message: "Feature has no content to analyze" });
+      }
 
-      // Set headers for Word document download
-      res.setHeader('Content-Type', 'application/msword');
-      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      console.log(`Starting complexity analysis for feature ${id}`);
+      const complexity = await analyzeFeatureComplexity(feature.generatedContent);
+      console.log(`Completed complexity analysis for feature ${id}`);
 
-      res.send(content);
+      res.json(complexity);
     } catch (error: any) {
+      console.error(`Error analyzing complexity for feature ${req.params.id}:`, error);
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.post("/api/features/export-multiple", requireAuth, async (req, res) => {
+    app.post("/api/features/suggest-titles", requireAuth, async (req: Request, res: Response) => {
+        try {
+            const { story } = req.body;
+            if (!story) {
+                return res.status(400).json({ message: "Story is required" });
+            }
+
+            const titles = await suggestTitle(story);
+            res.json({ titles });
+        } catch (error: any) {
+            res.status(500).json({ message: error.message });
+        }
+    });
+
+
+  app.post("/api/features/export-multiple", requireAuth, async (req: Request, res: Response) => {
     try {
       const { featureIds } = req.body;
 
@@ -284,76 +264,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Disposition', 'attachment; filename=features.zip');
 
       res.send(zipContent);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/analytics", requireAuth, async (_req, res) => {
-    try {
-      const analyticsData = await storage.getAnalytics();
-      res.json(analyticsData);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/features/:id/analyze", requireAuth, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const feature = await storage.getFeature(id);
-
-      if (!feature) {
-        return res.status(404).json({ message: "Feature not found" });
-      }
-
-      if (!feature.generatedContent) {
-        return res.status(400).json({ message: "Feature has no content to analyze" });
-      }
-
-      const analysis = await analyzeFeature(feature.generatedContent, feature.title);
-      res.json(analysis);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/features/:id/complexity", requireAuth, async (req, res) => {
-    try {
-      console.log(`Analyzing complexity for feature ${req.params.id}`);
-      const id = parseInt(req.params.id);
-      const feature = await storage.getFeature(id);
-
-      if (!feature) {
-        console.log(`Feature ${id} not found`);
-        return res.status(404).json({ message: "Feature not found" });
-      }
-
-      if (!feature.generatedContent) {
-        console.log(`Feature ${id} has no content to analyze`);
-        return res.status(400).json({ message: "Feature has no content to analyze" });
-      }
-
-      console.log(`Starting complexity analysis for feature ${id}`);
-      const complexity = await analyzeFeatureComplexity(feature.generatedContent);
-      console.log(`Completed complexity analysis for feature ${id}`);
-
-      res.json(complexity);
-    } catch (error: any) {
-      console.error(`Error analyzing complexity for feature ${req.params.id}:`, error);
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.post("/api/features/suggest-titles", requireAuth, async (req, res) => {
-    try {
-      const { story } = req.body;
-      if (!story) {
-        return res.status(400).json({ message: "Story is required" });
-      }
-
-      const titles = await suggestTitle(story);
-      res.json({ titles });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

@@ -1,128 +1,9 @@
-
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useLocation } from "wouter";
-import { registerSchema, type RegisterInput } from "@shared/schema";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-
-export default function Signup() {
-  const { toast } = useToast();
-  const [, navigate] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  const onSubmit = async (data: RegisterInput) => {
-    setIsLoading(true);
-    try {
-      await apiRequest("POST", "/api/auth/register", data);
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created successfully!",
-      });
-      navigate("/login");
-    } catch (error: any) {
-      toast({
-        title: "Registration failed",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="container flex items-center justify-center min-h-screen py-8">
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold">Create Account</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Sign up to start creating features
-            </p>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="your@email.com" type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input placeholder="••••••••" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input placeholder="••••••••" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating Account..." : "Sign up"}
-              </Button>
-            </form>
-          </Form>
-
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
-            <Button variant="link" className="p-0" onClick={() => navigate("/login")}>
-              Log in
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function Signup() {
@@ -138,30 +19,24 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
-      const res = await apiRequest("POST", "/api/auth/register", {
+      await apiRequest("/api/auth/signup", "POST", {
         name,
         email,
         password,
       });
-      
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Registration failed");
-      }
-      
+
       toast({
         title: "Account created",
         description: "Your account has been created successfully",
       });
-      
+
       navigate("/");
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to create account",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -173,7 +48,7 @@ export default function Signup() {
           <h1 className="text-2xl font-bold">Create an account</h1>
           <p className="mt-2 text-gray-600">Sign up to get started</p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -187,7 +62,7 @@ export default function Signup() {
                 required
               />
             </div>
-            
+
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -199,7 +74,7 @@ export default function Signup() {
                 required
               />
             </div>
-            
+
             <div>
               <Label htmlFor="password">Password</Label>
               <Input
@@ -212,26 +87,28 @@ export default function Signup() {
               />
             </div>
           </div>
-          
-          <Button
-            type="submit"
-            className="w-full"
+
+          <Button 
+            type="submit" 
+            className="w-full bg-blue-600 hover:bg-blue-700"
             disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Create account"}
           </Button>
-          
-          <div className="text-center text-sm">
-            <span className="text-gray-600">Already have an account? </span>
-            <Button
-              variant="link"
-              className="p-0 h-auto font-normal"
+        </form>
+
+        <div className="mt-4 text-center">
+          <p>
+            Already have an account?{" "}
+            <Button 
+              variant="link" 
+              className="p-0 text-blue-600" 
               onClick={() => navigate("/login")}
             >
               Sign in
             </Button>
-          </div>
-        </form>
+          </p>
+        </div>
       </div>
     </div>
   );

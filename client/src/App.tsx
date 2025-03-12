@@ -45,7 +45,7 @@ export default function App() {
         <Switch>
           <Route path="/login" component={LoginPage} />
           <Route path="/signup" component={SignupPage} />
-          <Route>
+          <Route path="/*">
             <AuthenticatedRoutes />
           </Route>
         </Switch>
