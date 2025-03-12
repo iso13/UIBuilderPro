@@ -1,134 +1,132 @@
+
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download, Shield } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download, Trash2, MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-
-
-interface Feature {
-  id: string;
-  title: string;
-  prompt: string;
-  createdAt: string;
-  archived: boolean;
-}
-
-interface User {
-  isAdmin: boolean;
-}
+import { Switch } from "@/components/ui/switch";
 
 function Home() {
-  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortByDate, setSortByDate] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
-  const { toast } = useToast();
-
-  const queryClient = useQueryClient();
-
-  const { data: features = [] } = useQuery<Feature[]>({
-    queryKey: ["features"],
-    queryFn: async () => {
-      const response = await fetch("/api/features");
-      if (!response.ok) {
-        throw new Error("Failed to fetch features");
-      }
-      return response.json();
-    },
-  });
-
-  const { data: user } = useQuery<User>({
-    queryKey: ["user"],
-    queryFn: async () => {
-      const response = await fetch("/api/user");
-      if (!response.ok) {
-        throw new Error("Failed to fetch user");
-      }
-      return response.json();
-    },
-  });
-
-  const archiveMutation = useMutation({
-    mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
-      const response = await fetch(`/api/features/${id}/archive`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ archived }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to archive feature");
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["features"] });
-      toast({
-        title: "Success",
-        description: "Feature status updated",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update feature status",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const filteredFeatures = features
-    .filter(
-      (feature) =>
-        (showArchived || !feature.archived) &&
-        feature.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortByDate) {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-      return a.title.localeCompare(b.title);
-    });
-
+  const [sortBy, setSortBy] = useState("date");
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isFeatureDialogOpen, setIsFeatureDialogOpen] = useState(false);
   const [newFeature, setNewFeature] = useState({
     title: "",
     description: "",
     scenario: "",
   });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
+  // Get user info
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const res = await fetch("/api/user");
+      if (!res.ok) throw new Error("Failed to fetch user");
+      return res.json();
+    },
+  });
+
+  // Fetch all features
+  const { data: features = [], isLoading } = useQuery({
+    queryKey: ["features", showArchived],
+    queryFn: async () => {
+      const res = await fetch(`/api/features?showArchived=${showArchived}`);
+      if (!res.ok) throw new Error("Failed to fetch features");
+      return res.json();
+    },
+  });
+
+  // Archive a feature
+  const archiveMutation = useMutation({
+    mutationFn: async (featureId) => {
+      const res = await fetch(`/api/features/${featureId}/archive`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to archive feature");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["features"]);
+      toast({
+        title: "Success",
+        description: "Feature archived",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Restore a feature
+  const restoreMutation = useMutation({
+    mutationFn: async (featureId) => {
+      const res = await fetch(`/api/features/${featureId}/restore`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to restore feature");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["features"]);
+      toast({
+        title: "Success",
+        description: "Feature restored",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete a feature (only Admin can do this)
+  const deleteMutation = useMutation({
+    mutationFn: async (featureId) => {
+      const res = await fetch(`/api/features/${featureId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete feature");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["features"]);
+      toast({
+        title: "Success",
+        description: "Feature deleted permanently",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Generate a new feature
   const generateMutation = useMutation({
     mutationFn: async (data) => {
       setIsGenerating(true);
@@ -167,8 +165,7 @@ function Home() {
     },
   });
 
-  const [isGenerating, setIsGenerating] = useState(false);
-
+  // Export features as JSON
   const handleExport = async () => {
     try {
       const res = await fetch("/api/features/export");
@@ -195,150 +192,163 @@ function Home() {
     }
   };
 
+  // Filter features based on search query
+  const filteredFeatures = features.filter((feature) =>
+    feature.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Sort features
+  const sortedFeatures = [...filteredFeatures].sort((a, b) => {
+    if (sortBy === "date") {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    } else if (sortBy === "title") {
+      return a.title.localeCompare(b.title);
+    }
+    return 0;
+  });
 
   return (
-    <div className="container py-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container py-6 space-y-8">
+      <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Generated Features</h1>
-        <div className="flex space-x-2">
-          {user?.isAdmin && (
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/admin")}
-            >
-              <Shield className="mr-2 h-4 w-4" />
-              Admin Portal
-            </Button>
-          )}
-          <Button onClick={() => setIsFeatureDialogOpen(true)}>
-            <Wand2 className="mr-2 h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            onClick={handleExport}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+          <Button
+            onClick={() => setIsFeatureDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Wand2 className="h-4 w-4" />
             Generate New Feature
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div className="relative w-full sm:w-auto flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div className="relative w-full md:w-1/3">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            type="search"
             placeholder="Search features..."
-            className="pl-8"
+            className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-4">
           <Button
             variant="outline"
-            size="sm"
-            onClick={() => setSortByDate(!sortByDate)}
+            className="flex items-center gap-2"
+            onClick={() => setSortBy(sortBy === "date" ? "title" : "date")}
           >
-            <SortAsc className="mr-2 h-4 w-4" />
-            Sort by {sortByDate ? "Date" : "Name"}
+            <SortAsc className="h-4 w-4" />
+            Sort by {sortBy === "date" ? "Date" : "Title"}
           </Button>
           <div className="flex items-center space-x-2">
             <Checkbox
-              id="show-archived" 
+              id="showArchived"
               checked={showArchived}
               onCheckedChange={(checked) => setShowArchived(checked === true)}
             />
-            <label htmlFor="show-archived" className="text-sm">
-              Show Archived
-            </label>
+            <Label htmlFor="showArchived">Show Archived</Label>
           </div>
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground">
         {filteredFeatures.length} features found
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <AnimatePresence>
-          {filteredFeatures.map((feature) => (
-            <motion.div
-              key={feature.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card
-                className={feature.archived ? "border-dashed border-gray-400 opacity-70" : ""}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <AnimatePresence mode="popLayout">
+          {isLoading ? (
+            <p>Loading features...</p>
+          ) : sortedFeatures.length === 0 ? (
+            <p>No features found.</p>
+          ) : (
+            sortedFeatures.map((feature) => (
+              <motion.div
+                key={feature.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="col-span-1"
               >
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{feature.title}</CardTitle>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <span className="sr-only">Actions</span>
-                          <svg
-                            width="15"
-                            height="15"
-                            viewBox="0 0 15 15"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                          >
-                            <path
-                              d="M3.625 7.5C3.625 8.12132 3.12132 8.625 2.5 8.625C1.87868 8.625 1.375 8.12132 1.375 7.5C1.375 6.87868 1.87868 6.375 2.5 6.375C3.12132 6.375 3.625 6.87868 3.625 7.5ZM8.625 7.5C8.625 8.12132 8.12132 8.625 7.5 8.625C6.87868 8.625 6.375 8.12132 6.375 7.5C6.375 6.87868 6.87868 6.375 7.5 6.375C8.12132 6.375 8.625 6.87868 8.625 7.5ZM13.625 7.5C13.625 8.12132 13.1213 8.625 12.5 8.625C11.8787 8.625 11.375 8.12132 11.375 7.5C11.375 6.87868 11.8787 6.375 12.5 6.375C13.1213 6.375 13.625 6.87868 13.625 7.5Z"
-                              fill="currentColor"
-                              fillRule="evenodd"
-                              clipRule="evenodd"
-                            ></path>
-                          </svg>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/feature/${feature.id}`)}>
-                          <Edit2 className="mr-2 h-4 w-4" />
-                          <span>View Details</span>
-                        </DropdownMenuItem>
-                        {feature.archived ? (
-                          <DropdownMenuItem
-                            onClick={() => archiveMutation.mutate({ id: feature.id, archived: false })}
-                          >
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            <span>Restore</span>
+                <Card className={feature.archived ? "border-dashed opacity-70" : ""}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-xl">{feature.title}</CardTitle>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => navigate(`/feature/${feature.id}`)}>
+                            <Edit2 className="mr-2 h-4 w-4" />
+                            View Details
                           </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem
-                            onClick={() => archiveMutation.mutate({ id: feature.id, archived: true })}
-                          >
-                            <Archive className="mr-2 h-4 w-4" />
-                            <span>Archive</span>
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {feature.prompt}
-                  </p>
-                </CardContent>
-                <CardFooter className="flex justify-between pt-0">
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(feature.createdAt).toLocaleDateString()}
-                    {feature.archived && " • Archived"}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/feature/${feature.id}`)}
-                  >
-                    Details
-                    <ArrowRight className="ml-2 h-3 w-3" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          ))}
+                          <DropdownMenuSeparator />
+                          {!feature.archived ? (
+                            <DropdownMenuItem onClick={() => archiveMutation.mutate(feature.id)}>
+                              <Archive className="mr-2 h-4 w-4" />
+                              Archive
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => restoreMutation.mutate(feature.id)}>
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Restore
+                            </DropdownMenuItem>
+                          )}
+                          {user?.role === "ADMIN" && (
+                            <DropdownMenuItem 
+                              className="text-red-500"
+                              onClick={() => deleteMutation.mutate(feature.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <CardDescription className="line-clamp-2">
+                      {feature.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-2 pb-4">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Activity className="mr-1 h-4 w-4" />
+                      {new Date(feature.createdAt).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => navigate(`/feature/${feature.id}`)}
+                    >
+                      View Details
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            ))
+          )}
         </AnimatePresence>
       </div>
+
       <Dialog open={isFeatureDialogOpen} onOpenChange={setIsFeatureDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>

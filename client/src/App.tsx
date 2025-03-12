@@ -14,7 +14,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
-import Admin from "@/pages/admin"; // Added import for Admin component
 
 function Navigation() {
   const { user, logoutMutation } = useAuth();
@@ -53,13 +52,7 @@ function AuthenticatedRoutes() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/generate" component={GenerateFeature} />
-      <Route path="/feature/:id" component={FeatureDetail} />
       <Route path="/analytics" component={Analytics} />
-      <Route path="/admin" component={Admin} /> {/* Added admin route */}
-      <Route>
-        <NotFound />
-      </Route>
     </Switch>
   );
 }

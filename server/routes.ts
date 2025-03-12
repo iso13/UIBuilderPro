@@ -10,11 +10,10 @@ import JSZip from 'jszip';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Protected route - only authenticated users can access features
-  app.get("/api/features", requireAuth, async (req, res) => {
+  app.get("/api/features", requireAuth, async (_req, res) => {
     try {
-      const includeDeleted = req.query.includeDeleted === 'true';
-      const includeArchived = req.query.includeArchived === 'true'; // Added to include archived features
-      const features = await storage.getAllFeatures(includeDeleted, includeArchived); // Modified to handle archived features
+      const includeDeleted = _req.query.includeDeleted === 'true';
+      const features = await storage.getAllFeatures(includeDeleted);
       res.json(features);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -34,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      const deletedFeature = await storage.permanentlyDeleteFeature(featureId); // Changed to permanently delete
+      const deletedFeature = await storage.softDeleteFeature(featureId);
 
       // Track deletion in analytics
       await storage.trackEvent({
@@ -355,19 +354,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const titles = await suggestTitle(story);
       res.json({ titles });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  app.get("/api/user", requireAuth, async (req, res) => { // Added user info endpoint
-    try {
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId!);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json({ id: user.id, email: user.email, isAdmin: user.isAdmin });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
