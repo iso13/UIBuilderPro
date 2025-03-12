@@ -5,7 +5,7 @@ import { generateFeature, analyzeFeature, suggestTitle, analyzeFeatureComplexity
 import { insertFeatureSchema, updateFeatureSchema } from "@shared/schema";
 import fs from "fs-extra";
 import path from "path";
-import { requireAuth } from "./auth";
+import { requireAuth, requireAdmin } from "./auth";
 import JSZip from 'jszip';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -19,7 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Admin route - delete a feature
   app.delete("/api/admin/features/:id", requireAdmin, async (req, res) => {
     try {
@@ -27,28 +27,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(featureId)) {
         return res.status(400).json({ message: "Invalid feature ID" });
       }
-      
+
       const feature = await storage.getFeature(featureId);
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
-      
+
       const deletedFeature = await storage.softDeleteFeature(featureId);
-      
+
       // Track deletion in analytics
       await storage.trackEvent({
         eventType: "feature_deletion",
         successful: true,
         errorMessage: null,
       });
-      
+
       res.json(deletedFeature);
     } catch (error: any) {
       console.error("Error deleting feature:", error);
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Admin route - restore a deleted feature
   app.post("/api/admin/features/:id/restore", requireAdmin, async (req, res) => {
     try {
@@ -56,12 +56,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(featureId)) {
         return res.status(400).json({ message: "Invalid feature ID" });
       }
-      
+
       const feature = await storage.getFeature(featureId);
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
-      
+
       const restoredFeature = await storage.restoreFeature(featureId);
       res.json(restoredFeature);
     } catch (error: any) {
@@ -207,21 +207,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/features/:id/permanent", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Get the current user from session
       const userId = req.session.userId;
       const user = await storage.getUser(userId!);
-      
+
       // Only allow admins to permanently delete features
       if (!user || !user.isAdmin) {
         return res.status(403).json({ message: "Only admins can permanently delete features" });
       }
-      
+
       const success = await storage.permanentlyDeleteFeature(id);
       if (!success) {
         return res.status(404).json({ message: "Feature not found" });
       }
-      
+
       res.json({ success: true, message: "Feature permanently deleted" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
