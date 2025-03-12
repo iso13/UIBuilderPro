@@ -6,10 +6,14 @@ export const features = pgTable('features', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
   story: text('story').notNull(),
-  scenarios: text('scenarios').notNull(),
+  scenarios: text('scenarios'),
   deleted: boolean('deleted').default(false).notNull(),
   generatedContent: text('generated_content'),
   manuallyEdited: boolean('manually_edited').default(false),
+  scenarioCount: integer('scenario_count'),
+  userId: integer('user_id'),
+  activeEditor: text('active_editor'),
+  activeEditorTimestamp: timestamp('active_editor_timestamp'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at'),
 });
@@ -45,10 +49,14 @@ export const featureSchema = z.object({
   id: z.number(),
   title: z.string(),
   story: z.string(),
-  scenarios: z.string(),
+  scenarios: z.string().optional(),
   deleted: z.boolean().default(false),
   generatedContent: z.string().nullable(),
   manuallyEdited: z.boolean().default(false),
+  scenarioCount: z.number().nullable(),
+  userId: z.number().nullable(),
+  activeEditor: z.string().nullable(),
+  activeEditorTimestamp: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date().nullable(),
 });
@@ -57,28 +65,29 @@ export const createFeatureSchema = featureSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  activeEditor: true,
+  activeEditorTimestamp: true,
 });
 
 export type FeatureFilter = "active" | "deleted" | "all";
 
 // Authentication schemas
-export const signupSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  name: z.string().min(1),
-});
-
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
 });
 
-export const userSchema = z.object({
-  id: z.string(),
+export const signupSchema = z.object({
   email: z.string().email(),
-  passwordHash: z.string(),
-  isAdmin: z.boolean().default(false),
+  password: z.string().min(6),
+  confirmPassword: z.string().min(6),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
+
+export type LoginInput = z.infer<typeof loginSchema>;
+export type RegisterInput = z.infer<typeof signupSchema>;
 
 // OpenAI schema
 export const featureGenRequestSchema = z.object({

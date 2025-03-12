@@ -83,7 +83,7 @@ export function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {features.length === 0 ? (
+        {!features || features.length === 0 ? (
           <div className="col-span-full text-center py-10">
             <p className="text-gray-500">No features found. Create your first feature!</p>
           </div>
