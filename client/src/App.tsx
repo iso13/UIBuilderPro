@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { ThemeProvider } from "@/components/theme-provider";
