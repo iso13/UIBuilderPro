@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -6,18 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { MoreVertical } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import type { Feature } from "@shared/schema";
 
 export function Home() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [features, setFeatures] = useState([]);
+  const [features, setFeatures] = useState<Feature[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
+  const [error, setError] = useState<string | null>(null);
+
   const fetchFeatures = async () => {
     setIsLoading(true);
     try {
-      const data = await apiRequest("GET", "/api/features");
+      const response = await apiRequest("GET", "/api/features");
+      const data = await response.json();
       setFeatures(data);
       setError(null);
     } catch (err) {
@@ -32,7 +33,7 @@ export function Home() {
     fetchFeatures();
   }, []);
 
-  const handleDeleteFeature = async (id) => {
+  const handleDeleteFeature = async (id: number) => {
     try {
       await apiRequest("DELETE", `/api/features/${id}`);
       toast({
@@ -49,9 +50,9 @@ export function Home() {
     }
   };
 
-  const handleRestoreFeature = async (id) => {
+  const handleRestoreFeature = async (id: number) => {
     try {
-      await apiRequest("PATCH", `/api/features/${id}/restore`);
+      await apiRequest("POST", `/api/features/${id}/restore`);
       toast({
         title: "Feature restored",
         description: "The feature has been restored",
@@ -94,10 +95,10 @@ export function Home() {
           </div>
         ) : (
           features.map((feature) => (
-            <Card key={feature.id} className={feature.deletedAt ? "opacity-60" : ""}>
+            <Card key={feature.id} className={feature.deleted ? "opacity-60" : ""}>
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-2">
-                  <h2 className="text-xl font-semibold">{feature.name}</h2>
+                  <h2 className="text-xl font-semibold">{feature.title}</h2>
                   <div className="relative">
                     <Button variant="ghost" size="icon">
                       <MoreVertical className="h-5 w-5" />
@@ -110,7 +111,7 @@ export function Home() {
                         >
                           Edit
                         </button>
-                        {feature.deletedAt ? (
+                        {feature.deleted ? (
                           <button
                             onClick={() => handleRestoreFeature(feature.id)}
                             className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
@@ -129,14 +130,14 @@ export function Home() {
                     </div>
                   </div>
                 </div>
-                <p className="text-gray-600 mb-4">{feature.description}</p>
+                <p className="text-gray-600 mb-4">{feature.story}</p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">
                     Created: {new Date(feature.createdAt).toLocaleDateString()}
                   </span>
-                  {feature.deletedAt && (
+                  {feature.deleted && (
                     <span className="text-sm text-red-500">
-                      Deleted: {new Date(feature.deletedAt).toLocaleDateString()}
+                      Deleted
                     </span>
                   )}
                 </div>
