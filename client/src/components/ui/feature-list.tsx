@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -141,26 +142,14 @@ export function FeatureList() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:bg-white/10 text-red-500 hover:text-red-400"
+                        className="h-8 w-8 hover:bg-white/10"
                         onClick={() => deleteMutation.mutate(feature.id)}
                         title="Delete feature"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-white/10"
-                        onClick={() => navigate(`/edit/${feature.id}`)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
-                  <Badge variant="outline" className="px-1.5 text-xs">
-                    {feature.scenarioCount} scenarios
-                  </Badge>
-                  <p className="text-sm text-gray-400 mt-2">{feature.story}</p>
                 </div>
               </div>
             </CardContent>
