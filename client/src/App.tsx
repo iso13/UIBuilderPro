@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { queryClient } from "@/lib/queryClient";
 import { UserProvider } from "@/contexts/user-context";
 import LoginPage from "@/pages/login";
