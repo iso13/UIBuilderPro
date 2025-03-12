@@ -28,7 +28,7 @@ export interface IStorage {
   getFeatures(userId: number, filter: FeatureFilter): Promise<Feature[]>; // Added getFeatures method
 
   // Analytics
-  trackEvent(event: InsertAnalytics): Promise<Analytics>;
+  trackEvent(event: Analytics): Promise<Analytics>;
   getAnalytics(userId?: number): Promise<Analytics[]>;
 }
 
@@ -65,11 +65,19 @@ export class PostgresStorage implements IStorage {
   }
 
   async getAllFeatures(includeDeleted: boolean = false): Promise<Feature[]> {
-    const query = db.select().from(features);
-    if (!includeDeleted) {
-      return await query.where(eq(features.deleted, false));
+    console.log("Getting all features, includeDeleted:", includeDeleted); // Debug log
+    try {
+      const query = db.select().from(features);
+      if (!includeDeleted) {
+        query.where(eq(features.deleted, false));
+      }
+      const result = await query;
+      console.log("Features query result:", result); // Debug log
+      return result;
+    } catch (error) {
+      console.error("Error in getAllFeatures:", error);
+      return [];
     }
-    return await query;
   }
 
   async updateFeature(id: number, updateData: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature> {
@@ -117,7 +125,7 @@ export class PostgresStorage implements IStorage {
   }
 
   // Analytics methods
-  async trackEvent(event: InsertAnalytics): Promise<Analytics> {
+  async trackEvent(event: Analytics): Promise<Analytics> {
     const [analytic] = await db.insert(analytics).values(event).returning();
     return analytic;
   }
