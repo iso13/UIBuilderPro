@@ -1,7 +1,6 @@
-
 import { Switch, Route, Router } from "wouter";
 import { Toaster } from "sonner";
-import { AuthProvider } from "./contexts/user-context";
+import { AuthProvider } from "./hooks/use-auth";
 import { QueryClientProvider } from "@tanstack/react-query";
 import NotFound from "./pages/not-found";
 import { Home } from "./pages/home";

@@ -79,7 +79,7 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 5000; // Corrected port number
   server.listen({
     port,
     host: "0.0.0.0",
