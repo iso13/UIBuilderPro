@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Feature } from "@/types/features";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Copy, Edit, Plus } from "lucide-react";
+import { Copy, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "./badge";
@@ -14,9 +13,6 @@ export function FeatureList() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
-  const [story, setStory] = useState("");
-  const [scenarioCount, setScenarioCount] = useState("3");
 
   const { data: features = [], isLoading } = useQuery({
     queryKey: ["/api/features"],
@@ -41,12 +37,7 @@ export function FeatureList() {
 
   const copyFeature = async (feature: Feature) => {
     try {
-      await apiRequest("POST", "/api/features", {
-        title: `${feature.title} (Copy)`,
-        story: feature.story,
-        scenarioCount: feature.scenarioCount,
-      });
-
+      await apiRequest("POST", "/api/features/copy", { id: feature.id });
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       toast({
         title: "Feature copied",
@@ -61,48 +52,12 @@ export function FeatureList() {
     }
   };
 
-  const handleGenerateFeature = async () => {
-    if (!title || !story) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a title and story for the feature",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await apiRequest("POST", "/api/features", {
-        title,
-        story,
-        scenarioCount: parseInt(scenarioCount),
-      });
-
-      toast({
-        title: "Success",
-        description: "Feature generated successfully",
-      });
-
-      setTitle("");
-      setStory("");
-      setScenarioCount("3");
-
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate feature",
-        variant: "destructive",
-      });
-    }
-  };
-
   const editFeature = (feature: Feature) => {
     navigate(`/edit/${feature.id}`);
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {isLoading ? (
         <p>Loading features...</p>
       ) : features.length === 0 ? (
@@ -111,11 +66,11 @@ export function FeatureList() {
         features.map((feature) => (
           <Card
             key={feature.id}
-            className="overflow-hidden border border-white/10 bg-zinc-950/50 backdrop-blur"
+            className="overflow-hidden border border-white/10 bg-zinc-800 backdrop-blur"
           >
-            <CardContent className="p-0">
+            <CardContent className="p-4">
               <div className="flex flex-col h-full">
-                <div className="space-y-1.5 p-6">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-lg leading-none tracking-tight text-white">
                       {feature.title}
@@ -142,7 +97,7 @@ export function FeatureList() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:bg-white/10"
+                        className="h-8 w-8 hover:bg-white/10 text-red-500 hover:text-red-400"
                         onClick={() => deleteMutation.mutate(feature.id)}
                         title="Delete feature"
                       >
@@ -150,6 +105,10 @@ export function FeatureList() {
                       </Button>
                     </div>
                   </div>
+                  <Badge variant="outline" className="px-1.5 text-xs">
+                    {feature.scenarioCount} scenarios
+                  </Badge>
+                  <p className="text-sm text-gray-400 mt-2">{feature.story}</p>
                 </div>
               </div>
             </CardContent>
