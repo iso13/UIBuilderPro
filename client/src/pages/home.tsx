@@ -1,20 +1,17 @@
-
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, SortAsc, MoreVertical, Archive, RefreshCw, Trash2, Download } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Search, SortAsc, Archive, RefreshCw, Trash2, Download, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function Home() {
-  const [navigate, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [showArchived, setShowArchived] = useState(false);
   const [userRole, setUserRole] = useState<string>("user");
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -39,55 +36,32 @@ export default function Home() {
     },
   });
 
-  // Archive/restore mutation
+  // Archive mutation
   const archiveMutation = useMutation({
     mutationFn: async ({ id, archived }: { id: number; archived: boolean }) => {
       const endpoint = archived ? `/api/features/${id}/restore` : `/api/features/${id}/delete`;
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
       });
-      if (!res.ok) throw new Error(`Failed to ${archived ? "restore" : "archive"} feature`);
+      if (!res.ok) throw new Error("Failed to update feature");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["features"] });
-      toast({
-        title: "Success",
-        description: "Feature status updated",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
     },
   });
 
-  // Permanent delete mutation
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await fetch(`/api/features/${id}/permanent`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete feature permanently");
+      if (!res.ok) throw new Error("Failed to delete feature");
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["features"] });
-      toast({
-        title: "Success",
-        description: "Feature permanently deleted",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
     },
   });
 
@@ -95,7 +69,7 @@ export default function Home() {
     try {
       const res = await fetch(`/api/features/export?showArchived=${showArchived}`);
       if (!res.ok) throw new Error("Failed to export features");
-      
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -105,17 +79,8 @@ export default function Home() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
-      toast({
-        title: "Features exported",
-        description: "All features have been exported as a zip file",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Export failed",
-        description: error.message,
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error("Error exporting features:", error);
     }
   };
 
@@ -139,7 +104,7 @@ export default function Home() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Feature Management</h1>
         <div className="flex space-x-2">
-          <Button onClick={() => navigate("/new")} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => setLocation("/new")} className="bg-blue-600 hover:bg-blue-700">
             Generate New Feature
           </Button>
           <Button onClick={handleExport} variant="outline" className="flex items-center gap-1">
@@ -185,7 +150,7 @@ export default function Home() {
               }`}
               onClick={() => setShowArchived(!showArchived)}
             >
-              {showArchived ? "Showing All" : "Active Only"}
+              <span>{showArchived ? "Hide Archived" : "Show Archived"}</span>
             </Button>
           </div>
         </div>
@@ -226,14 +191,14 @@ export default function Home() {
                 </div>
                 <div className="flex space-x-1">
                   <Button
-                    onClick={() => navigate(`/features/${feature.id}`)}
+                    onClick={() => setLocation(`/features/${feature.id}`)}
                     variant="ghost"
                     size="sm"
                   >
                     View
                   </Button>
                   <Button
-                    onClick={() => archiveMutation.mutate({ id: feature.id, archived: !feature.archived })}
+                    onClick={() => archiveMutation.mutate({ id: feature.id, archived: feature.archived })}
                     variant="ghost"
                     size="sm"
                     title={feature.archived ? "Restore" : "Archive"}
