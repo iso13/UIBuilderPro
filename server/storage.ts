@@ -1,3 +1,4 @@
+
 import { features, analytics, users, type Feature, type InsertFeature, type Analytics, type InsertAnalytics, type User } from "@shared/schema";
 import { eq, ilike } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -28,7 +29,7 @@ export interface IStorage {
 
   // Analytics
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
-  getAnalytics(): Promise<Analytics[]>;
+  getAnalytics(userId?: number): Promise<Analytics[]>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -87,7 +88,7 @@ export class PostgresStorage implements IStorage {
     return feature;
   }
 
-  async restoreFeature(id: number): Promise<Feature | null> {
+  async restoreFeature(id: number): Promise<Feature> {
     const [feature] = await db
       .update(features)
       .set({ deleted: false })
@@ -119,7 +120,10 @@ export class PostgresStorage implements IStorage {
     return analytic;
   }
 
-  async getAnalytics(): Promise<Analytics[]> {
+  async getAnalytics(userId?: number): Promise<Analytics[]> {
+    if (userId) {
+      return await db.select().from(analytics).where(eq(analytics.userId, userId)).orderBy(analytics.createdAt);
+    }
     return await db.select().from(analytics).orderBy(analytics.createdAt);
   }
 }

@@ -162,8 +162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const analytics = await storage.getAnalytics(userId);
-      res.json(analytics);
+      const analyticsData = await storage.getAnalytics(Number(userId));
+      res.json(analyticsData);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
