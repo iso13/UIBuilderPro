@@ -1,142 +1,150 @@
+
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 import { MoreVertical } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { toast } from "sonner";
 
-export default function Home() {
+export function Home() {
   const [, navigate] = useLocation();
   const [features, setFeatures] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoadingAdmin, setIsLoadingAdmin] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
 
-  async function refetch() {
+  const fetchFeatures = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       const data = await apiRequest("GET", "/api/features");
       setFeatures(data);
-      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching features:", error);
-      toast({
-        title: "Error fetching features",
-      });
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    refetch();
-    checkUserRole();
-  }, []);
-
-  const checkUserRole = async () => {
-    try {
-      const userData = await apiRequest("GET", "/api/me");
-      setIsAdmin(userData.role === "ADMIN");
-      setIsLoadingAdmin(false);
-    } catch (error) {
-      console.error("Error fetching user role:", error);
-      setIsLoadingAdmin(false);
+      toast.error("Failed to load features");
+    } finally {
+      setLoading(false);
     }
   };
+
+  const fetchUserRole = async () => {
+    try {
+      const data = await apiRequest("GET", "/api/users/me");
+      setUserRole(data.role);
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeatures();
+    fetchUserRole();
+  }, []);
 
   const handleArchiveFeature = async (id) => {
     try {
       await apiRequest("PATCH", `/api/features/${id}/archive`);
-      toast({
-        title: "Feature archived",
-        description: "The feature has been archived",
-      });
-      refetch();
+      toast.success("Feature archived");
+      fetchFeatures();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to archive feature",
-      });
-    }
-  };
-
-  const handleRestoreFeature = async (id) => {
-    try {
-      await apiRequest("PATCH", `/api/features/${id}/restore`);
-      toast({
-        title: "Feature restored",
-        description: "The feature has been restored",
-      });
-      refetch();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to restore feature",
-      });
+      toast.error("Failed to archive feature");
     }
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Feature Request Board</h1>
-        <div className="flex gap-2">
-          {!isLoadingAdmin && isAdmin && (
-            <Button onClick={() => navigate("/admin")} variant="outline">
-              Admin Dashboard
+    <div className="container py-10">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Feature Ideas</h1>
+        <div className="flex gap-4">
+          <Button onClick={() => navigate("/new")}>Generate New Feature</Button>
+          {userRole === "ADMIN" && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate("/admin")}
+            >
+              Admin Portal
             </Button>
           )}
-          <Button onClick={() => navigate("/new")}>Generate New Feature</Button>
         </div>
       </div>
 
-      {isLoading ? (
-        <p>Loading features...</p>
+      {loading ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        </div>
       ) : features.length === 0 ? (
-        <p>No features yet. Create one by clicking "Generate New Feature".</p>
+        <div className="text-center py-10">
+          <h2 className="text-2xl font-semibold">No features yet</h2>
+          <p className="text-muted-foreground mt-2">
+            Generate your first feature to get started.
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {features.map((feature) => (
-            <Card key={feature.id} className="relative">
-              <div className="absolute top-2 right-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate(`/edit/${feature.id}`)}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </div>
-              <CardContent className="pt-6">
-                <h2 className="text-xl font-semibold mb-2">{feature.title}</h2>
-                <p className="text-gray-600 mb-4">{feature.description}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">
-                    Status: {feature.status}
-                  </span>
-                  {feature.status !== "ARCHIVED" ? (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleArchiveFeature(feature.id)}
-                    >
-                      Archive
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRestoreFeature(feature.id)}
-                    >
-                      Restore
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features
+            .filter(feature => !feature.archived)
+            .map((feature) => (
+              <Card key={feature.id} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="p-6">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-xl mb-2">{feature.name}</h3>
+                      <div className="relative">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const dropdown = document.getElementById(`dropdown-${feature.id}`);
+                            dropdown.classList.toggle("hidden");
+                          }}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        <div
+                          id={`dropdown-${feature.id}`}
+                          className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 hidden z-10"
+                        >
+                          <div className="py-1">
+                            <button
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              onClick={() => navigate(`/edit/${feature.id}`)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              onClick={() => handleArchiveFeature(feature.id)}
+                            >
+                              Archive
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground mb-4">
+                      {feature.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {feature.tags?.split(",").map(
+                        (tag, i) =>
+                          tag && (
+                            <span
+                              key={i}
+                              className="bg-primary/10 text-primary px-2 py-1 rounded-md text-xs"
+                            >
+                              {tag.trim()}
+                            </span>
+                          )
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
       )}
     </div>
   );
 }
+
+export default Home;
