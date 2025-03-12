@@ -3,6 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "./card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLocation } from "wouter";
 import { MoreVertical } from "lucide-react";
 import type { Feature } from "@shared/schema";
@@ -10,23 +19,32 @@ import type { Feature } from "@shared/schema";
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [, navigate] = useLocation();
+  const [title, setTitle] = useState("");
+  const [story, setStory] = useState("");
+  const [scenarioCount, setScenarioCount] = useState("1");
 
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
   });
 
+  const handleGenerateFeature = async () => {
+    // Handle feature generation
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto py-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Generated Features</h1>
-            <Button onClick={() => navigate("/new")} className="bg-blue-500 text-white">
-              Generate New Feature
-            </Button>
+          <div className="mb-8 rounded-lg p-6 bg-black">
+            <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
+            <div className="space-y-4 animate-pulse">
+              <div className="h-10 bg-muted rounded"></div>
+              <div className="h-32 bg-muted rounded"></div>
+              <div className="h-10 bg-muted rounded w-1/4"></div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="bg-black rounded-lg p-6 space-y-4">
                 <div className="h-6 bg-muted rounded w-3/4"></div>
                 <div className="h-20 bg-muted rounded"></div>
@@ -42,17 +60,52 @@ export function FeatureList() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Generated Features</h1>
-          <Button onClick={() => navigate("/new")} className="bg-blue-500 text-white">
-            Generate New Feature
-          </Button>
+        <div className="mb-8 rounded-lg p-6 bg-black">
+          <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
+          <div className="space-y-4">
+            <div>
+              <Input
+                placeholder="Feature Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-background"
+              />
+            </div>
+            <div>
+              <Textarea
+                placeholder="Feature Story"
+                value={story}
+                onChange={(e) => setStory(e.target.value)}
+                className="bg-background min-h-[100px]"
+              />
+            </div>
+            <div className="flex gap-4">
+              <Select value={scenarioCount} onValueChange={setScenarioCount}>
+                <SelectTrigger className="w-[180px] bg-background">
+                  <SelectValue placeholder="Number of Scenarios" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={handleGenerateFeature}
+                className="bg-blue-500 text-white"
+              >
+                Generate Feature
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
-              <p className="text-muted-foreground">No features found. Create your first feature!</p>
+              <p className="text-muted-foreground">No features found. Generate your first feature!</p>
             </div>
           ) : (
             <AnimatePresence>
