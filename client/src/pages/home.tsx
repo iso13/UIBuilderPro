@@ -13,8 +13,10 @@ export function Home() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Default to empty array to avoid undefined issues
   const { data: features = [], isLoading, error } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
+    staleTime: 1000 * 60, // 1 minute
   });
 
   const deleteMutation = useMutation({
@@ -59,8 +61,15 @@ export function Home() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      <div className="container mx-auto py-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -71,6 +80,7 @@ export function Home() {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           Failed to load features
         </div>
+        <Button onClick={() => navigate("/new")}>Generate New Feature</Button>
       </div>
     );
   }
@@ -83,7 +93,7 @@ export function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {!features || features.length === 0 ? (
+        {features.length === 0 ? (
           <div className="col-span-full text-center py-10">
             <p className="text-gray-500">No features found. Create your first feature!</p>
           </div>
