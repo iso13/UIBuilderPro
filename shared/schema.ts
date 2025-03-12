@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import { pgTable, serial, text, boolean, timestamp, integer } from 'drizzle-orm/pg-core';
 
@@ -43,13 +42,21 @@ export type InsertAnalytics = typeof analytics.$inferInsert;
 
 // Feature schema and types
 export const featureSchema = z.object({
-  id: z.string(),
+  id: z.number(),
   title: z.string(),
   story: z.string(),
-  scenarios: z.array(z.string()),
+  scenarios: z.string(),
   deleted: z.boolean().default(false),
-  createdAt: z.string(),
-  updatedAt: z.string().nullable(),
+  generatedContent: z.string().nullable(),
+  manuallyEdited: z.boolean().default(false),
+  createdAt: z.date(),
+  updatedAt: z.date().nullable(),
+});
+
+export const createFeatureSchema = featureSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export type FeatureFilter = "active" | "deleted" | "all";

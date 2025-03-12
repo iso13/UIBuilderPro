@@ -1,12 +1,8 @@
-import type { Express, Request, Response } from "express";
+import { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateFeature } from "./openai";
-import { Feature, FeatureFilter } from "@shared/schema";
-import fs from "fs-extra";
-import path from "path";
 import { requireAuth } from "./auth";
-import JSZip from 'jszip';
+import { FeatureFilter } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Features routes
@@ -18,17 +14,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const filter = (req.query.filter as FeatureFilter) || "active";
-
-      try {
-        const features = await storage.getFeatures(userId, filter);
-        res.json(features);
-      } catch (error: any) {
-        console.error("Error fetching features:", error);
-        res.status(500).json({ message: "Failed to fetch features" });
-      }
+      const features = await storage.getAllFeatures(filter === "all");
+      res.json(features);
     } catch (error: any) {
-      console.error("Error in /api/features route:", error);
-      res.status(500).json({ message: error.message });
+      console.error("Error fetching features:", error);
+      res.status(500).json({ message: "Failed to fetch features" });
     }
   });
 
