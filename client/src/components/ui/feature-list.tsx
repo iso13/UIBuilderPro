@@ -5,6 +5,7 @@ import { Card } from "./card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,10 @@ export function FeatureList() {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto py-6">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
+            <p className="text-muted-foreground">Generate Cucumber features using AI</p>
+          </div>
           <div className="mb-8 rounded-lg p-6 bg-black">
             <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
             <div className="space-y-4 animate-pulse">
@@ -60,20 +65,29 @@ export function FeatureList() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
+          <p className="text-muted-foreground">Generate Cucumber features using AI</p>
+        </div>
+
         <div className="mb-8 rounded-lg p-6 bg-black">
           <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
+              <Label htmlFor="title">Feature Title</Label>
               <Input
-                placeholder="Feature Title"
+                id="title"
+                placeholder="Enter feature title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="bg-background"
               />
             </div>
-            <div>
+            <div className="space-y-2">
+              <Label htmlFor="story">Feature Story</Label>
               <Textarea
-                placeholder="Feature Story"
+                id="story"
+                placeholder="Enter feature story"
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
                 className="bg-background min-h-[100px]"
@@ -87,7 +101,7 @@ export function FeatureList() {
                 <SelectContent>
                   {[1, 2, 3, 4, 5].map((num) => (
                     <SelectItem key={num} value={num.toString()}>
-                      {num}
+                      {num} Scenario{num > 1 ? 's' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
