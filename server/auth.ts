@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { loginSchema, registerSchema } from "@shared/schema";
+import { loginSchema, signupSchema as registerSchema } from "@shared/schema";
 
 // Extend session interface to include userId
 declare module 'express-session' {
