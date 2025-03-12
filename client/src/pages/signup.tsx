@@ -1,14 +1,18 @@
+
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
-export default function Signup() {
+function Signup() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,100 +20,100 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!name || !email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await apiRequest("/api/auth/signup", "POST", {
+      await apiRequest("POST", "/api/auth/signup", {
         name,
         email,
         password,
       });
-
+      
       toast({
-        title: "Account created",
-        description: "Your account has been created successfully",
+        title: "Success",
+        description: "Account created successfully",
       });
-
+      
+      // Log the user in
+      await login(email, password);
       navigate("/");
-    } catch (error: any) {
+    } catch (error) {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to create account",
+        description: "Failed to create account",
+        variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Create an account</h1>
-          <p className="mt-2 text-gray-600">Sign up to get started</p>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl">Sign Up</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                type="text"
-                placeholder="Enter your name"
+                placeholder="John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
-
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Create a password"
+                placeholder="********"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            disabled={isLoading}
-          >
-            {isLoading ? "Creating account..." : "Create account"}
-          </Button>
-        </form>
-
-        <div className="mt-4 text-center">
-          <p>
-            Already have an account?{" "}
-            <Button 
-              variant="link" 
-              className="p-0 text-blue-600" 
-              onClick={() => navigate("/login")}
-            >
-              Sign in
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Creating Account..." : "Sign Up"}
             </Button>
-          </p>
-        </div>
-      </div>
+          </form>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-500">
+              Already have an account?{" "}
+              <Button variant="link" className="p-0" onClick={() => navigate("/login")}>
+                Login
+              </Button>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+export default Signup;
