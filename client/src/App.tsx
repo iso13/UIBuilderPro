@@ -49,7 +49,7 @@ export default function App() {
             <AuthenticatedRoutes />
           </Route>
         </Switch>
-        <Toaster />
+        <Toaster /> {/* Toaster remains in its original, correct position */}
       </UserProvider>
     </QueryClientProvider>
   );
