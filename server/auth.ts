@@ -19,23 +19,21 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 };
 
 // Admin middleware
-export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+export const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  
-  // Get the user to check if they're an admin
-  storage.getUser(req.session.userId)
-    .then(user => {
-      if (!user || !user.isAdmin) {
-        return res.status(403).json({ message: "Admin privileges required" });
-      }
-      next();
-    })
-    .catch(error => {
-      console.error("Admin middleware error:", error);
-      res.status(500).json({ message: "Server error checking admin privileges" });
-    });
+
+  try {
+    const user = await storage.getUser(req.session.userId);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ message: "Admin privileges required" });
+    }
+    next();
+  } catch (error) {
+    console.error("Admin middleware error:", error);
+    res.status(500).json({ message: "Server error checking admin privileges" });
+  }
 };
 
 // Authentication routes
@@ -94,16 +92,11 @@ export async function registerAuthRoutes(app: any) {
 
       // Start session
       req.session.userId = user.id;
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session save error:", err);
-          return res.status(500).json({ message: "Failed to establish session" });
-        }
-        res.json({ 
-          id: user.id,
-          email: user.email,
-          isAdmin: user.isAdmin
-        });
+
+      res.json({ 
+        id: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -112,17 +105,13 @@ export async function registerAuthRoutes(app: any) {
 
   // Logout
   app.post("/api/auth/logout", (req: Request, res: Response) => {
-    if (req.session) {
-      req.session.destroy((err) => {
-        if (err) {
-          console.error("Session destruction error:", err);
-          return res.status(500).json({ message: "Failed to logout" });
-        }
-        res.json({ message: "Logged out successfully" });
-      });
-    } else {
-      res.json({ message: "No active session" });
-    }
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destruction error:", err);
+        return res.status(500).json({ message: "Failed to logout" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
   });
 
   // Get current user
