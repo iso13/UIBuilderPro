@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Copy, Trash2, Edit, MoreVertical } from "lucide-react";
+import { Copy, Trash2, Edit } from "lucide-react";
 import type { Feature } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -27,6 +28,7 @@ export function FeatureList() {
   const [scenarioCount, setScenarioCount] = useState("1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, logoutMutation } = useAuth();
 
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
@@ -102,14 +104,10 @@ export function FeatureList() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto py-6">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
-            <p className="text-muted-foreground">Generate Cucumber features using AI</p>
-          </div>
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <>
           <div className="mb-8 rounded-lg p-6 bg-black">
             <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
             <div className="space-y-4 animate-pulse">
@@ -127,19 +125,12 @@ export function FeatureList() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-    );
-  }
+        </>
+      );
+    }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
-          <p className="text-muted-foreground">Generate Cucumber features using AI</p>
-        </div>
-
+    return (
+      <>
         <div className="mb-8 rounded-lg p-6 bg-black">
           <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
           <div className="space-y-4">
@@ -242,6 +233,51 @@ export function FeatureList() {
             </AnimatePresence>
           )}
         </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Navigation Header */}
+      <div className="bg-black border-b border-gray-800">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex gap-6">
+            <Button 
+              variant="ghost" 
+              className="text-white hover:text-blue-400"
+              onClick={() => navigate("/")}
+            >
+              Home
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="text-white hover:text-blue-400"
+              onClick={() => navigate("/analytics")}
+            >
+              Analytics
+            </Button>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-white">{user?.email}</span>
+            <Button 
+              variant="ghost" 
+              className="text-white hover:text-blue-400"
+              onClick={() => logoutMutation.mutate()}
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto py-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
+          <p className="text-muted-foreground">Generate Cucumber features using AI</p>
+        </div>
+
+        {renderContent()}
       </div>
     </div>
   );
