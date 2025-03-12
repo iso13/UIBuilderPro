@@ -1,8 +1,7 @@
-
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download, Trash2, MoreVertical } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, Activity, ArrowRight, Download, Trash2, MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -11,10 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { useState, useEffect } from "react"; //Corrected import
+
 
 function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +50,8 @@ function Home() {
     },
   });
 
-  // Archive a feature
+  // Archive a feature, Restore a feature, Delete a feature, Generate a new feature, and Export features remain largely unchanged from the original
+
   const archiveMutation = useMutation({
     mutationFn: async (featureId) => {
       const res = await fetch(`/api/features/${featureId}/archive`, {
@@ -76,7 +76,6 @@ function Home() {
     },
   });
 
-  // Restore a feature
   const restoreMutation = useMutation({
     mutationFn: async (featureId) => {
       const res = await fetch(`/api/features/${featureId}/restore`, {
@@ -101,7 +100,6 @@ function Home() {
     },
   });
 
-  // Delete a feature (only Admin can do this)
   const deleteMutation = useMutation({
     mutationFn: async (featureId) => {
       const res = await fetch(`/api/features/${featureId}`, {
@@ -126,7 +124,6 @@ function Home() {
     },
   });
 
-  // Generate a new feature
   const generateMutation = useMutation({
     mutationFn: async (data) => {
       setIsGenerating(true);
@@ -165,7 +162,6 @@ function Home() {
     },
   });
 
-  // Export features as JSON
   const handleExport = async () => {
     try {
       const res = await fetch("/api/features/export");
@@ -192,12 +188,10 @@ function Home() {
     }
   };
 
-  // Filter features based on search query
   const filteredFeatures = features.filter((feature) =>
     feature.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Sort features
   const sortedFeatures = [...filteredFeatures].sort((a, b) => {
     if (sortBy === "date") {
       return new Date(b.createdAt) - new Date(a.createdAt);
@@ -208,147 +202,141 @@ function Home() {
   });
 
   return (
-    <div className="container py-6 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Generated Features</h1>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            onClick={handleExport}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button
-            onClick={() => setIsFeatureDialogOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Wand2 className="h-4 w-4" />
-            Generate New Feature
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div className="relative w-full md:w-1/3">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search features..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={() => setSortBy(sortBy === "date" ? "title" : "date")}
-          >
-            <SortAsc className="h-4 w-4" />
-            Sort by {sortBy === "date" ? "Date" : "Title"}
-          </Button>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="showArchived"
-              checked={showArchived}
-              onCheckedChange={(checked) => setShowArchived(checked === true)}
+    <div className="container mx-auto py-16 px-4">
+      <h1 className="text-4xl font-bold mb-8">Generated Features</h1>
+      <p className="text-muted-foreground mb-8">Browse your AI-generated features</p>
+      <div className="grid gap-6">
+        <div className="flex justify-between items-center mb-4">
+          <div className="relative w-full md:w-1/3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search features..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Label htmlFor="showArchived">Show Archived</Label>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => setSortBy(sortBy === "date" ? "title" : "date")}
+            >
+              <SortAsc className="h-4 w-4" />
+              Sort by {sortBy === "date" ? "Date" : "Title"}
+            </Button>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showArchived"
+                checked={showArchived}
+                onCheckedChange={(checked) => setShowArchived(checked)}
+              />
+              <Label htmlFor="showArchived">Show Archived</Label>
+            </div>
+            <Button
+              variant="default"
+              onClick={handleExport}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={() => setIsFeatureDialogOpen(true)}>
+              <Wand2 className="h-4 w-4" />
+              Generate New Feature
+            </Button>
           </div>
         </div>
-      </div>
 
-      <p className="text-sm text-muted-foreground">
-        {filteredFeatures.length} features found
-      </p>
+        <p className="text-sm text-muted-foreground">
+          {filteredFeatures.length} features found
+        </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence mode="popLayout">
           {isLoading ? (
             <p>Loading features...</p>
           ) : sortedFeatures.length === 0 ? (
             <p>No features found.</p>
           ) : (
-            sortedFeatures.map((feature) => (
-              <motion.div
-                key={feature.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="col-span-1"
-              >
-                <Card className={feature.archived ? "border-dashed opacity-70" : ""}>
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-xl">{feature.title}</CardTitle>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => navigate(`/feature/${feature.id}`)}>
-                            <Edit2 className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {!feature.archived ? (
-                            <DropdownMenuItem onClick={() => archiveMutation.mutate(feature.id)}>
-                              <Archive className="mr-2 h-4 w-4" />
-                              Archive
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedFeatures.map((feature) => (
+                <motion.div
+                  key={feature.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="col-span-1"
+                >
+                  <Card className={feature.archived ? "border-dashed opacity-70" : ""}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <CardTitle className="text-xl">{feature.title}</CardTitle>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => navigate(`/feature/${feature.id}`)}>
+                              <Edit2 className="mr-2 h-4 w-4" />
+                              View Details
                             </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem onClick={() => restoreMutation.mutate(feature.id)}>
-                              <RefreshCw className="mr-2 h-4 w-4" />
-                              Restore
-                            </DropdownMenuItem>
-                          )}
-                          {user?.role === "ADMIN" && (
-                            <DropdownMenuItem 
-                              className="text-red-500"
-                              onClick={() => deleteMutation.mutate(feature.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <CardDescription className="line-clamp-2">
-                      {feature.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-2 pb-4">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Activity className="mr-1 h-4 w-4" />
-                      {new Date(feature.createdAt).toLocaleDateString()}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => navigate(`/feature/${feature.id}`)}
-                    >
-                      View Details
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))
+                            <DropdownMenuSeparator />
+                            {!feature.archived ? (
+                              <DropdownMenuItem onClick={() => archiveMutation.mutate(feature.id)}>
+                                <Archive className="mr-2 h-4 w-4" />
+                                Archive
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => restoreMutation.mutate(feature.id)}>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Restore
+                              </DropdownMenuItem>
+                            )}
+                            {user?.role === "ADMIN" && (
+                              <DropdownMenuItem
+                                className="text-red-500"
+                                onClick={() => deleteMutation.mutate(feature.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <CardDescription className="line-clamp-2">
+                        {feature.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-2 pb-4">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Activity className="mr-1 h-4 w-4" />
+                        {new Date(feature.createdAt).toLocaleDateString()}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => navigate(`/feature/${feature.id}`)}
+                      >
+                        View Details
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
           )}
         </AnimatePresence>
       </div>
-
       <Dialog open={isFeatureDialogOpen} onOpenChange={setIsFeatureDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
