@@ -1,82 +1,29 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card } from "./card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Copy, Trash2, Edit } from "lucide-react";
-import type { Feature } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Feature } from "@/types/features";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Trash2, Copy, Edit, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Badge } from "./badge";
 
 export function FeatureList() {
-  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [, navigate] = useLocation();
-  const [title, setTitle] = useState("");
-  const [story, setStory] = useState("");
-  const [scenarioCount, setScenarioCount] = useState("1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, logoutMutation } = useAuth();
+  const [title, setTitle] = useState("");
+  const [story, setStory] = useState("");
+  const [scenarioCount, setScenarioCount] = useState("3");
 
-  const { data: features = [], isLoading } = useQuery<Feature[]>({
+  const { data: features = [], isLoading } = useQuery({
     queryKey: ["/api/features"],
+    queryFn: async () => {
+      const data = await apiRequest("GET", "/api/features");
+      return data;
+    },
   });
-  
-  // Function to copy feature content to clipboard
-  const copyFeature = async (feature: Feature) => {
-    if (feature.generatedContent) {
-      await navigator.clipboard.writeText(feature.generatedContent);
-      toast({
-        title: "Copied to clipboard",
-        description: `Feature "${feature.title}" copied to clipboard`,
-        variant: "default",
-      });
-    }
-  };
-  
-  // Function to navigate to feature edit page
-  const editFeature = (feature: Feature) => {
-    navigate(`/feature/${feature.id}`);
-  };
-  
-  // Function to delete a feature
-  const deleteFeature = async (feature: Feature) => {
-    if (confirm(`Are you sure you want to delete "${feature.title}"?`)) {
-      try {
-        await apiRequest({
-          url: `/api/features/${feature.id}`,
-          method: 'DELETE',
-        });
-        
-        toast({
-          title: "Feature deleted",
-          description: `"${feature.title}" has been moved to trash`,
-          variant: "default",
-        });
-        
-        // Refresh the features list
-        queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete feature",
-          variant: "destructive",
-        });
-      }
-    }
-  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -137,7 +84,8 @@ export function FeatureList() {
 
       setTitle("");
       setStory("");
-      setScenarioCount("1");
+      setScenarioCount("3");
+
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
     } catch (error) {
       toast({
@@ -148,202 +96,77 @@ export function FeatureList() {
     }
   };
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <>
-          <div className="mb-8 rounded-lg p-6 bg-black">
-            <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
-            <div className="space-y-4 animate-pulse">
-              <div className="h-10 bg-muted rounded"></div>
-              <div className="h-32 bg-muted rounded"></div>
-              <div className="h-10 bg-muted rounded w-1/4"></div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="bg-black rounded-lg p-6 space-y-4">
-                <div className="h-6 bg-muted rounded w-3/4"></div>
-                <div className="h-20 bg-muted rounded"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <div className="mb-8 rounded-lg p-6 bg-black">
-          <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Feature Title</Label>
-              <Input
-                id="title"
-                placeholder="Enter feature title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="bg-background"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="story">Feature Story</Label>
-              <Textarea
-                id="story"
-                placeholder="Enter feature story"
-                value={story}
-                onChange={(e) => setStory(e.target.value)}
-                className="bg-background min-h-[100px]"
-              />
-            </div>
-            <div className="flex gap-4">
-              <Select value={scenarioCount} onValueChange={setScenarioCount}>
-                <SelectTrigger className="w-[180px] bg-background">
-                  <SelectValue placeholder="Number of Scenarios" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} Scenario{num > 1 ? 's' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleGenerateFeature}
-                className="bg-blue-500 text-white"
-              >
-                Generate Feature
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {!features || features.length === 0 ? (
-            <div className="col-span-full text-center py-10">
-              <p className="text-muted-foreground">No features found. Generate your first feature!</p>
-            </div>
-          ) : (
-            <AnimatePresence>
-              {features.map((feature) => (
-                <motion.div
-                  key={feature.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <Card className="bg-black hover:bg-black/70 transition-colors cursor-pointer h-full">
-                    <div className="p-6">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                        {feature.story}
-                      </p>
-                      <div className="text-xs text-muted-foreground mt-auto flex items-center gap-2">
-                        <span className="text-primary">
-                          {feature.scenarioCount || 0} scenarios
-                        </span>
-                        <span>•</span>
-                        <span>{new Date(feature.createdAt).toLocaleDateString()}</span>
-                      </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => copyFeature(feature)}
-                            title="Copy feature"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => editFeature(feature)}
-                            title="Edit feature"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-white/10 text-red-500 hover:text-red-400"
-                            onClick={() => deleteMutation.mutate(feature.id)}
-                            title="Delete feature"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => navigate(`/edit/${feature.id}`)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <p className="text-muted-foreground mb-4 line-clamp-3">{feature.story}</p>
-                      <div className="text-sm text-muted-foreground">
-                        Created: {new Date(feature.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          )}
-        </div>
-      </>
-    );
+  const editFeature = (feature: Feature) => {
+    navigate(`/edit/${feature.id}`);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation Header */}
-      <div className="bg-black border-b border-gray-800">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex gap-6">
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-blue-400"
-              onClick={() => navigate("/")}
-            >
-              Home
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-blue-400"
-              onClick={() => navigate("/analytics")}
-            >
-              Analytics
-            </Button>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-white">{user?.email}</span>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-blue-400"
-              onClick={() => logoutMutation.mutate()}
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto py-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
-          <p className="text-muted-foreground">Generate Cucumber features using AI</p>
-        </div>
-
-        {renderContent()}
-      </div>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {isLoading ? (
+        <p>Loading features...</p>
+      ) : features.length === 0 ? (
+        <p>No features found.</p>
+      ) : (
+        features.map((feature) => (
+          <Card
+            key={feature.id}
+            className="overflow-hidden border border-white/10 bg-zinc-950/50 backdrop-blur"
+          >
+            <CardContent className="p-0">
+              <div className="flex flex-col h-full">
+                <div className="space-y-1.5 p-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg leading-none tracking-tight text-white">
+                      {feature.title}
+                    </h3>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-white/10"
+                        onClick={() => copyFeature(feature)}
+                        title="Copy feature"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-white/10"
+                        onClick={() => editFeature(feature)}
+                        title="Edit feature"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-white/10 text-red-500 hover:text-red-400"
+                        onClick={() => deleteMutation.mutate(feature.id)}
+                        title="Delete feature"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-white/10"
+                        onClick={() => navigate(`/edit/${feature.id}`)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="px-1.5 text-xs">
+                    {feature.scenarioCount} scenarios
+                  </Badge>
+                  <p className="text-sm text-gray-400 mt-2">{feature.story}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 }
