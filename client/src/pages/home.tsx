@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download, Trash2 } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download, Trash2, MoreVertical as MoreVerticalIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
