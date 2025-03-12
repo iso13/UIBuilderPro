@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { MoreVertical } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -16,13 +16,13 @@ export default function Home() {
   const handleRestoreFeature = async (id) => {
     try {
       await apiRequest("PATCH", `/api/features/${id}/restore`);
-      toast({
+      useToast({
         title: "Feature restored",
         description: "The feature has been restored",
       });
       refetch();
     } catch (error) {
-      toast({
+      useToast({
         title: "Error",
         description: "Failed to restore feature",
         variant: "destructive",
