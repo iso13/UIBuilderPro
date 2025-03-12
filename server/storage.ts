@@ -24,6 +24,7 @@ export interface IStorage {
   softDeleteFeature(id: number): Promise<Feature>;
   restoreFeature(id: number): Promise<Feature>;
   findFeatureByTitle(title: string): Promise<Feature | undefined>;
+  permanentlyDeleteFeature(id: number): Promise<boolean>;
 
   // Analytics
   trackEvent(event: InsertAnalytics): Promise<Analytics>;
@@ -86,13 +87,21 @@ export class PostgresStorage implements IStorage {
     return feature;
   }
 
-  async restoreFeature(id: number): Promise<Feature> {
+  async restoreFeature(id: number): Promise<Feature | null> {
     const [feature] = await db
       .update(features)
       .set({ deleted: false })
       .where(eq(features.id, id))
       .returning();
-    return feature;
+    return feature || null;
+  }
+
+  async permanentlyDeleteFeature(id: number): Promise<boolean> {
+    const result = await db
+      .delete(features)
+      .where(eq(features.id, id));
+
+    return result.rowCount > 0;
   }
 
   async findFeatureByTitle(title: string): Promise<Feature | undefined> {

@@ -154,6 +154,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/features/:id/permanent", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Get the current user from session
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId!);
+      
+      // Only allow admins to permanently delete features
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ message: "Only admins can permanently delete features" });
+      }
+      
+      const success = await storage.permanentlyDeleteFeature(id);
+      if (!success) {
+        return res.status(404).json({ message: "Feature not found" });
+      }
+      
+      res.json({ success: true, message: "Feature permanently deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/features/export/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

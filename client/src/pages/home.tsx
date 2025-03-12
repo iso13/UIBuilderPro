@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download } from "lucide-react";
+import { Wand2, Search, SortAsc, Edit2, Archive, RefreshCw, HelpCircle, Activity, ArrowRight, Download, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -296,6 +296,34 @@ export default function Home() {
     },
   });
 
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/features/${id}`); // Assuming DELETE for permanent deletion
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Success",
+        description: "Feature permanently deleted",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+        duration: 3000,
+      });
+    },
+  });
+
+
   const editForm = useForm<InsertFeature & { generatedContent: string }>({
     resolver: zodResolver(updateFeatureSchema),
     defaultValues: {
@@ -574,32 +602,48 @@ export default function Home() {
                         {new Date(feature.createdAt).toLocaleDateString()}
                       </p>
                       <div className="flex gap-1">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  feature.deleted
-                                    ? restoreMutation.mutate(feature.id)
-                                    : deleteMutation.mutate(feature.id);
-                                }}
-                              >
-                                {feature.deleted ? (
-                                  <RefreshCw className="h-4 w-4" />
-                                ) : (
-                                  <Archive className="h-4 w-4" />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <MoreVerticalIcon className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {feature.deleted ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => restoreMutation.mutate(feature.id)}
+                                >
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  Restore Feature
+                                </DropdownMenuItem>
+                                {user?.isAdmin && (
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        "Are you sure you want to permanently delete this feature? This action cannot be undone."
+                                      );
+                                      if (confirmed) {
+                                        permanentDeleteMutation.mutate(feature.id);
+                                      }
+                                    }}
+                                    className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Permanently Delete
+                                  </DropdownMenuItem>
                                 )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {feature.deleted ? "Restore Feature" : "Archive Feature"}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                              </>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => deleteMutation.mutate(feature.id)}
+                              >
+                                <Archive className="mr-2 h-4 w-4" />
+                                Archive Feature
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
