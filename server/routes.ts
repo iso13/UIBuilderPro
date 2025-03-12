@@ -66,23 +66,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const { title, description } = req.body;
+      const { title, story, scenarioCount = 3 } = req.body;
 
       // Generate feature using OpenAI
       let featureData: Partial<Feature>;
       let successful = true;
       let errorMessage = null;
-      let scenarioCount = 0;
+      let actualScenarioCount = scenarioCount;
 
       try {
-        featureData = await generateFeature(title, description);
-        scenarioCount = featureData.scenarios?.length || 0;
+        featureData = await generateFeature(title, story, actualScenarioCount);
+        actualScenarioCount = featureData.scenarios?.length || 0;
       } catch (error: any) {
         successful = false;
         errorMessage = error.message;
         featureData = {
           title,
-          story: description,
+          story,
           scenarios: [],
         };
       }
@@ -100,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         featureId: feature.id,
         successful,
         errorMessage,
-        scenarioCount,
+        scenarioCount: actualScenarioCount,
       });
 
       res.json(feature);
