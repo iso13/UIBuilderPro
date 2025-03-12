@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Feature } from "@/types/features";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, Edit, Trash2 } from "lucide-react";
+import { Copy, Edit, Pencil, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "./badge";
@@ -37,8 +38,14 @@ export function FeatureList() {
 
   const copyFeature = async (feature: Feature) => {
     try {
-      await apiRequest("POST", "/api/features/copy", { id: feature.id });
+      await apiRequest("POST", "/api/features", {
+        title: `${feature.title} (Copy)`,
+        story: feature.story,
+        scenarios: feature.scenarios,
+      });
+      
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      
       toast({
         title: "Feature copied",
         description: "A copy of the feature has been created",
@@ -46,14 +53,10 @@ export function FeatureList() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to copy feature",
+        description: "There was an error copying the feature",
         variant: "destructive",
       });
     }
-  };
-
-  const editFeature = (feature: Feature) => {
-    navigate(`/edit/${feature.id}`);
   };
 
   return (
@@ -89,10 +92,10 @@ export function FeatureList() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 hover:bg-white/10"
-                        onClick={() => editFeature(feature)}
+                        onClick={() => navigate(`/edit/${feature.id}`)}
                         title="Edit feature"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
