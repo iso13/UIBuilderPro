@@ -12,7 +12,61 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { useEffect, useState } from "react";
 
-function App() {
+function AuthenticatedRoutes() {
+  const [, navigate] = useLocation();
+  const { user, isLoading } = useUser();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/new" component={New} />
+      <Route path="/edit/:id" component={Edit} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function AppRoutes() {
+  const { user, isLoading } = useUser();
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+      <Route>
+        <AuthenticatedRoutes />
+      </Route>
+    </Switch>
+  );
+}
+
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
@@ -22,61 +76,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-function AppRoutes() {
-  const [loaded, setLoaded] = useState(false);
-  const { user, checkAuth } = useUser();
-  const [, navigate] = useLocation();
-
-  useEffect(() => {
-    const init = async () => {
-      await checkAuth();
-      setLoaded(true);
-    };
-    init();
-  }, [checkAuth]);
-
-  if (!loaded) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
-
-  return (
-    <Switch>
-      <Route path="/login">
-        {user ? <Home /> : <Login />}
-      </Route>
-      <Route path="/signup">
-        {user ? <Home /> : <Signup />}
-      </Route>
-      {user ? <AuthenticatedRoutes /> : <Route>{() => {
-        navigate("/login");
-        return null;
-      }}</Route>}
-    </Switch>
-  );
-}
-
-function AuthenticatedRoutes() {
-  return (
-    <Switch>
-      <Route path="/">
-        <Home />
-      </Route>
-      <Route path="/new">
-        <New />
-      </Route>
-      <Route path="/edit/:id">
-        {(params) => <Edit id={params.id} />}
-      </Route>
-      <Route>
-        <NotFound />
-      </Route>
-    </Switch>
-  );
-}
-
-export default App;

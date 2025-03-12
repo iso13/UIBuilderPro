@@ -1,7 +1,8 @@
+
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
-export default function NotFound() {
+export function NotFound() {
   const [, navigate] = useLocation();
 
   return (
@@ -20,3 +21,5 @@ export default function NotFound() {
     </div>
   );
 }
+
+export default NotFound;

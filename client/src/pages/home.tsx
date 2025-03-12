@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -10,137 +9,111 @@ import { apiRequest } from "@/lib/queryClient";
 export function Home() {
   const [, navigate] = useLocation();
   const [features, setFeatures] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchFeatures = async () => {
+    setIsLoading(true);
     try {
-      setLoading(true);
       const data = await apiRequest("GET", "/api/features");
       setFeatures(data);
-    } catch (error) {
-      console.error("Error fetching features:", error);
-      toast.error("Failed to load features");
+      setError(null);
+    } catch (err) {
+      setError("Failed to load features");
+      console.error(err);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUserRole = async () => {
-    try {
-      const data = await apiRequest("GET", "/api/users/me");
-      setUserRole(data.role);
-    } catch (error) {
-      console.error("Error fetching user role:", error);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchFeatures();
-    fetchUserRole();
   }, []);
 
-  const handleArchiveFeature = async (id) => {
+  const handleDelete = async (id) => {
     try {
-      await apiRequest("PATCH", `/api/features/${id}/archive`);
-      toast.success("Feature archived");
+      await apiRequest("DELETE", `/api/features/${id}`);
+      toast.success("Feature deleted");
       fetchFeatures();
     } catch (error) {
-      toast.error("Failed to archive feature");
+      toast.error("Failed to delete feature");
+    }
+  };
+
+  const handleEdit = (id) => {
+    navigate(`/edit/${id}`);
+  };
+
+  const handleRestoreFeature = async (id) => {
+    try {
+      await apiRequest("PATCH", `/api/features/${id}/restore`);
+      toast({
+        title: "Feature restored",
+        description: "The feature has been restored",
+      });
+      fetchFeatures();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to restore feature",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <div className="container py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Feature Ideas</h1>
-        <div className="flex gap-4">
-          <Button onClick={() => navigate("/new")}>Generate New Feature</Button>
-          {userRole === "ADMIN" && (
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/admin")}
-            >
-              Admin Portal
-            </Button>
-          )}
-        </div>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Feature Manager</h1>
+        <Button onClick={() => navigate("/new")}>Generate New Feature</Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      {isLoading ? (
+        <div className="flex justify-center my-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+        </div>
+      ) : error ? (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
         </div>
       ) : features.length === 0 ? (
-        <div className="text-center py-10">
-          <h2 className="text-2xl font-semibold">No features yet</h2>
-          <p className="text-muted-foreground mt-2">
-            Generate your first feature to get started.
-          </p>
+        <div className="text-center my-8">
+          <p className="text-gray-500">No features found. Create one by clicking "Generate New Feature".</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features
-            .filter(feature => !feature.archived)
-            .map((feature) => (
-              <Card key={feature.id} className="overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="p-6">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-xl mb-2">{feature.name}</h3>
-                      <div className="relative">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            const dropdown = document.getElementById(`dropdown-${feature.id}`);
-                            dropdown.classList.toggle("hidden");
-                          }}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {features.map((feature) => (
+            <Card key={feature.id} className="overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <h2 className="text-xl font-semibold">{feature.name}</h2>
+                  <div className="relative group">
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-20 hidden group-hover:block">
+                      <div className="py-1">
+                        <button
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                          onClick={() => handleEdit(feature.id)}
                         >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                        <div
-                          id={`dropdown-${feature.id}`}
-                          className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 hidden z-10"
+                          Edit
+                        </button>
+                        <button
+                          className="px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left"
+                          onClick={() => handleDelete(feature.id)}
                         >
-                          <div className="py-1">
-                            <button
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              onClick={() => navigate(`/edit/${feature.id}`)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              onClick={() => handleArchiveFeature(feature.id)}
-                            >
-                              Archive
-                            </button>
-                          </div>
-                        </div>
+                          Delete
+                        </button>
                       </div>
                     </div>
-                    <p className="text-muted-foreground mb-4">
-                      {feature.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {feature.tags?.split(",").map(
-                        (tag, i) =>
-                          tag && (
-                            <span
-                              key={i}
-                              className="bg-primary/10 text-primary px-2 py-1 rounded-md text-xs"
-                            >
-                              {tag.trim()}
-                            </span>
-                          )
-                      )}
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+                <p className="text-gray-600">{feature.description}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
