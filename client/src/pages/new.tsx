@@ -1,17 +1,16 @@
-
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function NewFeature() {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState("");
@@ -96,16 +95,11 @@ export default function NewFeature() {
                   <SelectValue placeholder="Select number of scenarios" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1 Scenario</SelectItem>
-                  <SelectItem value="2">2 Scenarios</SelectItem>
-                  <SelectItem value="3">3 Scenarios</SelectItem>
-                  <SelectItem value="4">4 Scenarios</SelectItem>
-                  <SelectItem value="5">5 Scenarios</SelectItem>
-                  <SelectItem value="6">6 Scenarios</SelectItem>
-                  <SelectItem value="7">7 Scenarios</SelectItem>
-                  <SelectItem value="8">8 Scenarios</SelectItem>
-                  <SelectItem value="9">9 Scenarios</SelectItem>
-                  <SelectItem value="10">10 Scenarios</SelectItem>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num} Scenario{num > 1 ? 's' : ''}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
