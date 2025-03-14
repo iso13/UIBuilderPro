@@ -101,7 +101,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save feature to database
       const feature = await storage.createFeature({
-        ...featureData,
+        title,
+        story,
+        generatedContent: featureData as string,
+        scenarioCount,
         userId,
       });
 
