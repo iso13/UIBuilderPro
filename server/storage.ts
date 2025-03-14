@@ -141,6 +141,10 @@ export class PostgresStorage implements IStorage {
     return await db.select().from(analytics).orderBy(analytics.createdAt);
   }
 
+  async logAnalyticsEvent(event: { userId: number; eventType: string; featureId: number; successful: boolean; errorMessage: string | null; scenarioCount: number | null; }): Promise<Analytics> {
+    return await this.trackEvent(event);
+  }
+
   async getFeatures(userId: number, filter: FeatureFilter = "all"): Promise<Feature[]> {
     const query = db.select().from(features);
 
