@@ -15,6 +15,7 @@ app.use(session({
   store: new pgSession({
     conObject: {
       connectionString: process.env.DATABASE_URL,
+      ssl: 'require'
     },
     createTableIfMissing: true,
   }),
@@ -35,6 +36,7 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
+  // Capture JSON responses for logging
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
@@ -49,6 +51,7 @@ app.use((req, res, next) => {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
+      // Truncate long log lines
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
@@ -60,13 +63,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// Top-level error handler for uncaught promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 (async () => {
   try {
-    // Register auth routes before other routes
+    log('Starting server initialization...');
+
+    // Register auth routes first
     await registerAuthRoutes(app);
+    log('Auth routes registered');
 
+    // Register API routes
     const server = await registerRoutes(app);
+    log('API routes registered');
 
+    // Error handling middleware
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
@@ -76,11 +90,14 @@ app.use((req, res, next) => {
 
     if (app.get("env") === "development") {
       await setupVite(app, server);
+      log('Vite middleware setup complete');
     } else {
       serveStatic(app);
+      log('Static file serving setup complete');
     }
 
-    const port = 5000; // Fixed port to 5000
+    // Fixed port configuration
+    const port = 5000;
     server.listen({
       port,
       host: "0.0.0.0",
