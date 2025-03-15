@@ -4,7 +4,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { type Analytics } from "@shared/schema";
 
 export default function Analytics() {
-  const { data: analytics = [], isLoading } = useQuery<Analytics[]>({
+  const { data: analytics, isLoading, error } = useQuery<Analytics[]>({
     queryKey: ["/api/analytics"],
   });
 
@@ -12,6 +12,17 @@ export default function Analytics() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <h1 className="text-2xl font-bold mb-2">Analytics Dashboard</h1>
+        <p className="text-muted-foreground">
+          {error ? "Error loading analytics" : "No analytics data available"}
+        </p>
       </div>
     );
   }
@@ -32,12 +43,10 @@ export default function Analytics() {
     (totalFeatures || 1);
 
   return (
-    <div className="mx-auto px-4 sm:px-6 lg:px-8 w-full">
-      <div className="flex flex-col gap-8 py-8">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col gap-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-            Analytics Dashboard
-          </h1>
+          <h1 className="text-4xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             Track feature generation metrics and usage
           </p>

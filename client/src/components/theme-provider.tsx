@@ -35,20 +35,27 @@ export function ThemeProvider({
   useEffect(() => {
     const root = window.document.documentElement;
 
+    // First remove both classes
     root.classList.remove("light", "dark");
 
+    // Then add the appropriate class
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
         ? "dark"
         : "light";
-
       root.classList.add(systemTheme);
-      return;
+
+      // Store the current theme
+      localStorage.setItem(storageKey, theme);
+    } else {
+      root.classList.add(theme);
+      localStorage.setItem(storageKey, theme);
     }
 
-    root.classList.add(theme);
-  }, [theme]);
+    // Also update data-theme attribute for components that rely on it
+    root.setAttribute("data-theme", theme);
+  }, [theme, storageKey]);
 
   const value = {
     theme,
