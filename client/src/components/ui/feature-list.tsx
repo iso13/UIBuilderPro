@@ -28,12 +28,49 @@ export function FeatureList() {
   const [scenarioCount, setScenarioCount] = useState("1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, logoutMutation } = useAuth();
+  const { user } = useAuth();
 
+  // Features Query
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
+    staleTime: 0, // Always fetch fresh data
+    retry: 2
   });
 
+  // Generate Feature Mutation
+  const generateFeatureMutation = useMutation({
+    mutationFn: async () => {
+      if (!title || !story) {
+        throw new Error("Title and story are required");
+      }
+      return apiRequest("POST", "/api/features", {
+        title,
+        story,
+        scenarioCount: parseInt(scenarioCount),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Feature generated successfully",
+      });
+      // Clear form fields
+      setTitle("");
+      setStory("");
+      setScenarioCount("1");
+      // Invalidate and refetch features
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate feature",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete Feature Mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/features/${id}`);
@@ -47,61 +84,34 @@ export function FeatureList() {
     },
   });
 
-  const copyFeature = async (feature: Feature) => {
-    try {
-      await apiRequest("POST", "/api/features", {
+  // Copy Feature Mutation
+  const copyFeatureMutation = useMutation({
+    mutationFn: async (feature: Feature) => {
+      return apiRequest("POST", "/api/features", {
         title: `${feature.title} (Copy)`,
         story: feature.story,
         scenarioCount: feature.scenarioCount,
       });
-
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       toast({
         title: "Feature copied",
         description: "A copy of the feature has been created",
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to copy feature",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
-  const handleGenerateFeature = async () => {
-    if (!title || !story) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a title and story for the feature",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await apiRequest("POST", "/api/features", {
-        title,
-        story,
-        scenarioCount: parseInt(scenarioCount),
-      });
-
-      toast({
-        title: "Success",
-        description: "Feature generated successfully",
-      });
-
-      setTitle("");
-      setStory("");
-      setScenarioCount("1");
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate feature",
-        variant: "destructive",
-      });
-    }
+  const handleGenerateFeature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    generateFeatureMutation.mutate();
   };
 
   const renderContent = () => {
@@ -133,7 +143,7 @@ export function FeatureList() {
       <>
         <div className="mb-8 rounded-lg p-6 bg-black">
           <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
-          <div className="space-y-4">
+          <form onSubmit={handleGenerateFeature} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Feature Title</Label>
               <Input
@@ -142,6 +152,7 @@ export function FeatureList() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="bg-background"
+                required
               />
             </div>
             <div className="space-y-2">
@@ -152,6 +163,7 @@ export function FeatureList() {
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
                 className="bg-background min-h-[100px]"
+                required
               />
             </div>
             <div className="flex gap-4">
@@ -168,13 +180,14 @@ export function FeatureList() {
                 </SelectContent>
               </Select>
               <Button
-                onClick={handleGenerateFeature}
+                type="submit"
                 className="bg-blue-500 text-white"
+                disabled={generateFeatureMutation.isPending}
               >
-                Generate Feature
+                {generateFeatureMutation.isPending ? "Generating..." : "Generate Feature"}
               </Button>
             </div>
-          </div>
+          </form>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -200,7 +213,8 @@ export function FeatureList() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => copyFeature(feature)}
+                            onClick={() => copyFeatureMutation.mutate(feature)}
+                            disabled={copyFeatureMutation.isPending}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -209,6 +223,7 @@ export function FeatureList() {
                             size="icon"
                             className="h-8 w-8 hover:bg-white/10"
                             onClick={() => deleteMutation.mutate(feature.id)}
+                            disabled={deleteMutation.isPending}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -239,44 +254,11 @@ export function FeatureList() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Header */}
-      <div className="bg-black border-b border-gray-800">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex gap-6">
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-blue-400"
-              onClick={() => navigate("/")}
-            >
-              Home
-            </Button>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-blue-400"
-              onClick={() => navigate("/analytics")}
-            >
-              Analytics
-            </Button>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-white">{user?.email}</span>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:text-blue-400"
-              onClick={() => logoutMutation.mutate()}
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto py-6">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
           <p className="text-muted-foreground">Generate Cucumber features using AI</p>
         </div>
-
         {renderContent()}
       </div>
     </div>
