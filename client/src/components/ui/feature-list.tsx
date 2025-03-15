@@ -399,7 +399,7 @@ export function FeatureList() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
@@ -429,7 +429,7 @@ export function FeatureList() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                   >
-                    <Card className="bg-transparent border-gray-800 h-[240px]">
+                    <Card className="bg-transparent border-gray-800 h-[180px]">
                       <div className="p-4 h-full flex flex-col">
                         <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
                         <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
@@ -480,7 +480,7 @@ export function FeatureList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container max-w-[1920px] mx-auto py-6">
+      <div className="container max-w-[1920px] mx-auto py-6"> {/* Added max-w-[1920px] */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
           <p className="text-muted-foreground">Generate Cucumber features using AI</p>
