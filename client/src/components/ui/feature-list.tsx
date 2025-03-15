@@ -429,43 +429,41 @@ export function FeatureList() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                   >
-                    <Card className="bg-black hover:bg-black/70 transition-colors h-full">
-                      <div className="p-6">
-                        <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                        <p className="text-muted-foreground mb-6 line-clamp-3">{feature.story}</p>
-                        <div className="mt-auto">
-                          <div className="text-sm text-muted-foreground mb-3">
+                    <Card className="bg-black border-gray-800">
+                      <div className="p-4">
+                        <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
+                        <p className="text-sm text-gray-500 mb-4 line-clamp-2">{feature.story}</p>
+                        <div className="flex justify-between items-center">
+                          <div className="text-xs text-gray-600">
                             {new Date(feature.createdAt).toLocaleDateString()}
                           </div>
-                          <div className="flex justify-end gap-2">
+                          <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-white/10"
+                              className="h-6 w-6"
                               onClick={() => deleteMutation.mutate(feature.id)}
                               disabled={deleteMutation.isPending}
                             >
-                              <Archive className="h-4 w-4" />
+                              <Archive className="h-3 w-3" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-white/10"
-                              onClick={() => {
-                                setSelectedFeature(feature);
-                                setEditDialogOpen(true);
-                              }}
+                              className="h-6 w-6"
+                              onClick={() => copyFeatureMutation.mutate(feature)}
+                              disabled={copyFeatureMutation.isPending}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-3 w-3" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-white/10"
+                              className="h-6 w-6"
                               onClick={() => exportFeatureMutation.mutate(feature.id)}
                               disabled={exportFeatureMutation.isPending}
                             >
-                              <Download className="h-4 w-4" />
+                              <Download className="h-3 w-3" />
                             </Button>
                           </div>
                         </div>
