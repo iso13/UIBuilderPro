@@ -4,10 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "./textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
 import {
   Select,
   SelectContent,
@@ -56,7 +55,6 @@ export function FeatureList() {
   const [scenarioCount, setScenarioCount] = useState("1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [currentAnalysis, setCurrentAnalysis] = useState<FeatureResponse | null>(null);
   const [generationStep, setGenerationStep] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,13 +70,6 @@ export function FeatureList() {
     gcTime: 0,
     refetchInterval: 1000,
   });
-
-  // Update the filter change handler
-  const handleFilterChange = (value: string) => {
-    setFilterOption(value as FeatureFilter);
-    // Clear current analysis when switching views
-    setCurrentAnalysis(null);
-  };
 
   // Generate Feature Mutation
   const generateFeatureMutation = useMutation({
@@ -155,7 +146,7 @@ export function FeatureList() {
     },
   });
 
-  // Add exportFeatureMutation right after the restore mutation
+  // Export Feature Mutation
   const exportFeatureMutation = useMutation({
     mutationFn: async (featureId: number) => {
       const response = await apiRequest("POST", "/api/features/export-multiple", {
@@ -280,7 +271,7 @@ export function FeatureList() {
                 className="pl-9 w-[200px]"
               />
             </div>
-            <Select value={filterOption} onValueChange={handleFilterChange}>
+            <Select value={filterOption} onValueChange={(value) => setFilterOption(value as FeatureFilter)}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
@@ -349,7 +340,7 @@ export function FeatureList() {
                             {new Date(feature.createdAt).toLocaleDateString()}
                           </div>
                           <div className="flex gap-1">
-                            {feature.deleted ? (
+                            {filterOption === "deleted" ? (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -401,6 +392,7 @@ export function FeatureList() {
             </AnimatePresence>
           )}
         </div>
+
         {/* Feature Generation Status */}
         {generationStep !== null && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -444,35 +436,31 @@ export function FeatureList() {
     );
   };
 
-  const renderHeader = () => (
-    <div className="flex justify-between items-center mb-8">
-      <div className="text-center mx-auto">
-        <h1 className="text-3xl font-bold mb-2">
-          {filterOption === "deleted" ? "Archived Features" : "Feature Generator"}
-        </h1>
-        <p className="text-muted-foreground">
-          {filterOption === "deleted"
-            ? "View and restore archived features"
-            : "Generate Cucumber features using AI"}
-        </p>
-      </div>
-      {filterOption === "deleted" && (
-        <Button
-          variant="outline"
-          className="ml-4"
-          onClick={() => setFilterOption("active")}
-        >
-          <Home className="h-4 w-4 mr-2" />
-          Back to Home
-        </Button>
-      )}
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-6">
-        {renderHeader()}
+        <div className="flex justify-between items-center mb-8">
+          <div className="text-center mx-auto">
+            <h1 className="text-3xl font-bold mb-2">
+              {filterOption === "deleted" ? "Archived Features" : "Feature Generator"}
+            </h1>
+            <p className="text-muted-foreground">
+              {filterOption === "deleted"
+                ? "View and restore archived features"
+                : "Generate Cucumber features using AI"}
+            </p>
+          </div>
+          {filterOption === "deleted" && (
+            <Button
+              variant="outline"
+              className="ml-4"
+              onClick={() => setFilterOption("active")}
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          )}
+        </div>
         {renderContent()}
         <EditFeatureDialog
           feature={selectedFeature}
