@@ -19,9 +19,12 @@ import type { Feature, FeatureFilter } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { FeatureGenerationLoader } from "./feature-generation-loader";
 import { EditFeatureDialog } from "./edit-feature-dialog";
+import { FeatureViewDialog } from "./feature-view-dialog";
 
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [story, setStory] = useState("");
   const [scenarioCount, setScenarioCount] = useState("1");
@@ -31,7 +34,6 @@ export function FeatureList() {
   const [generationStep, setGenerationStep] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
 
   // Features Query
@@ -140,7 +142,13 @@ export function FeatureList() {
   });
 
   const renderFeatureCard = (feature: Feature) => (
-    <Card className="bg-transparent border-gray-800 h-[180px] w-full">
+    <Card 
+      className="bg-transparent border-gray-800 h-[180px] w-full cursor-pointer hover:border-gray-700 transition-colors"
+      onClick={() => {
+        setSelectedFeature(feature);
+        setViewDialogOpen(true);
+      }}
+    >
       <div className="p-4 h-full flex flex-col">
         <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
         <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
@@ -148,7 +156,7 @@ export function FeatureList() {
           <div className="text-xs text-gray-600">
             {new Date(feature.createdAt).toLocaleDateString()}
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
             {filterOption === "deleted" ? (
               <Button
                 variant="ghost"
@@ -423,6 +431,11 @@ export function FeatureList() {
           feature={selectedFeature}
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
+        />
+        <FeatureViewDialog
+          feature={selectedFeature}
+          open={viewDialogOpen}
+          onOpenChange={setViewDialogOpen}
         />
       </div>
     </div>
