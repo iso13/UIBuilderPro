@@ -22,6 +22,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Progress } from "./progress";
 import { ScenarioComplexity } from "./scenario-complexity";
 import { FeatureGenerationLoader } from "./feature-generation-loader";
+import { EditFeatureDialog } from "./edit-feature-dialog";
 
 // Add type for the response
 interface FeatureResponse {
@@ -61,6 +62,7 @@ export function FeatureList() {
   const [generationStep, setGenerationStep] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Features Query with more aggressive refresh
   const { data: features = [], isLoading } = useQuery<Feature[]>({
@@ -445,7 +447,10 @@ export function FeatureList() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 hover:bg-white/10"
-                              onClick={() => navigate(`/edit/${feature.id}`)}
+                              onClick={() => {
+                                setSelectedFeature(feature);
+                                setEditDialogOpen(true);
+                              }}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -484,6 +489,11 @@ export function FeatureList() {
         </div>
         {renderContent()}
       </div>
+      <EditFeatureDialog
+        feature={selectedFeature}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </div>
   );
 }
