@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { requireAuth } from "./auth";
 import { FeatureFilter } from "@shared/schema";
-import { generateFeature, analyzeFeature, analyzeFeatureComplexity } from "./openai";
+import { generateFeature, analyzeFeature, analyzeFeatureComplexity, suggestTitle } from "./openai";
 import { Feature } from "@shared/schema";
 import JSZip from "jszip";
 
@@ -134,13 +134,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const { title, story, scenarios } = req.body;
+      const { title, story, generatedContent, manuallyEdited } = req.body;
 
-      const featureId = parseInt(req.params.id); //Convert to number
+      const featureId = parseInt(req.params.id);
       const feature = await storage.updateFeature(featureId, {
         title,
         story,
-        scenarios,
+        generatedContent,
+        manuallyEdited,
+        updatedAt: new Date()
       });
 
       res.json(feature);
@@ -156,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const featureId = parseInt(req.params.id); //Convert to number
+      const featureId = parseInt(req.params.id); 
       await storage.softDeleteFeature(featureId);
       res.json({ message: "Feature moved to trash" });
     } catch (error: any) {
@@ -171,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const featureId = parseInt(req.params.id); //Convert to number
+      const featureId = parseInt(req.params.id); 
       await storage.restoreFeature(featureId);
       res.json({ message: "Feature restored" });
     } catch (error: any) {
@@ -259,7 +261,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
     });
 
-
   app.post("/api/features/export-multiple", requireAuth, async (req: Request, res: Response) => {
     try {
       const { featureIds } = req.body;
@@ -269,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const features = await Promise.all(
-        featureIds.map(id => storage.getFeature(parseInt(id))) //Convert to number
+        featureIds.map(id => storage.getFeature(parseInt(id))) 
       );
 
       // Filter out any null results
@@ -284,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       validFeatures.forEach(feature => {
         const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.doc`;
-        zip.file(filename, feature.generatedContent || ""); // Handle potential null generatedContent
+        zip.file(filename, feature.generatedContent || ""); 
       });
 
       const zipContent = await zip.generateAsync({ type: "nodebuffer" });

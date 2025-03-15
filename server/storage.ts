@@ -62,12 +62,26 @@ export class PostgresStorage {
   }
 
   async updateFeature(id: number, updateData: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature> {
-    const [feature] = await db
-      .update(features)
-      .set({ ...updateData, updatedAt: new Date() })
-      .where(eq(features.id, id))
-      .returning();
-    return feature;
+    console.log('Updating feature:', id, 'with data:', updateData);
+    try {
+      const [feature] = await db
+        .update(features)
+        .set({ 
+          ...updateData,
+          updatedAt: new Date()
+        })
+        .where(eq(features.id, id))
+        .returning();
+
+      console.log('Updated feature:', feature);
+      if (!feature) {
+        throw new Error('Feature not found or update failed');
+      }
+      return feature;
+    } catch (error) {
+      console.error('Error updating feature:', error);
+      throw error;
+    }
   }
 
   async softDeleteFeature(id: number): Promise<Feature> {
