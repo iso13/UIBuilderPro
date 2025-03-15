@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card } from "./card";
+import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -163,15 +163,6 @@ export function FeatureList() {
               <div className="h-10 bg-muted rounded w-1/4"></div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-black rounded-lg p-6 space-y-4">
-                <div className="h-6 bg-muted rounded w-3/4"></div>
-                <div className="h-20 bg-muted rounded"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
         </>
       );
     }
@@ -227,58 +218,84 @@ export function FeatureList() {
           </form>
         </div>
 
-        {/* Analysis Section */}
+        {/* Generated Feature Content */}
         {currentAnalysis && (
-          <div className="mt-8 space-y-6">
-            <Card className="bg-black p-6">
-              <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
-
-              <div className="grid gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Quality Score</h3>
-                  <Progress value={currentAnalysis.analysis.quality_score} className="h-2" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {currentAnalysis.analysis.quality_score}/100
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Suggestions</h3>
-                  <ul className="space-y-2">
-                    {currentAnalysis.analysis.suggestions.map((suggestion, index) => (
-                      <li key={index} className="text-sm text-muted-foreground">
-                        • {suggestion}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Scenario Complexity</h3>
-                  <div className="grid gap-4">
-                    {currentAnalysis.complexity.scenarios.map((scenario, index) => (
-                      <ScenarioComplexity
-                        key={index}
-                        name={scenario.name}
-                        complexity={scenario.complexity}
-                        factors={scenario.factors}
-                        explanation={scenario.explanation}
-                      />
-                    ))}
+          <div className="space-y-6">
+            <Card className="bg-black">
+              <CardHeader>
+                <CardTitle>{currentAnalysis.feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">User Story</h3>
+                    <p className="text-muted-foreground whitespace-pre-line">
+                      {currentAnalysis.feature.story}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Generated Feature</h3>
+                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                      {currentAnalysis.feature.generatedContent}
+                    </pre>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Recommendations</h3>
-                  <ul className="space-y-2">
-                    {currentAnalysis.complexity.recommendations.map((recommendation, index) => (
-                      <li key={index} className="text-sm text-muted-foreground">
-                        • {recommendation}
-                      </li>
-                    ))}
-                  </ul>
+            {/* Analysis Results */}
+            <Card className="bg-black">
+              <CardHeader>
+                <CardTitle>Analysis Results</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Quality Score</h3>
+                    <Progress value={currentAnalysis.analysis.quality_score} className="h-2" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {currentAnalysis.analysis.quality_score}/100
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Suggestions</h3>
+                    <ul className="space-y-2">
+                      {currentAnalysis.analysis.suggestions.map((suggestion, index) => (
+                        <li key={index} className="text-sm text-muted-foreground">
+                          • {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Scenario Complexity</h3>
+                    <div className="grid gap-4">
+                      {currentAnalysis.complexity.scenarios.map((scenario, index) => (
+                        <ScenarioComplexity
+                          key={index}
+                          name={scenario.name}
+                          complexity={scenario.complexity}
+                          factors={scenario.factors}
+                          explanation={scenario.explanation}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Recommendations</h3>
+                    <ul className="space-y-2">
+                      {currentAnalysis.complexity.recommendations.map((recommendation, index) => (
+                        <li key={index} className="text-sm text-muted-foreground">
+                          • {recommendation}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
         )}
