@@ -30,11 +30,12 @@ export function FeatureList() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  // Features Query
+  // Features Query with more aggressive refresh
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
-    staleTime: 0, // Always fetch fresh data
-    retry: 2
+    staleTime: 0,
+    cacheTime: 0,
+    refetchInterval: 1000, // Poll every second while the component is mounted
   });
 
   // Generate Feature Mutation
@@ -43,13 +44,14 @@ export function FeatureList() {
       if (!title || !story) {
         throw new Error("Title and story are required");
       }
-      return apiRequest("POST", "/api/features", {
+      const response = await apiRequest("POST", "/api/features", {
         title,
         story,
         scenarioCount: parseInt(scenarioCount),
       });
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Success",
         description: "Feature generated successfully",
@@ -58,8 +60,9 @@ export function FeatureList() {
       setTitle("");
       setStory("");
       setScenarioCount("1");
-      // Invalidate and refetch features
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      // Force refetch features
+      await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/features"] });
     },
     onError: (error: Error) => {
       toast({
@@ -75,8 +78,8 @@ export function FeatureList() {
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/features/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       toast({
         title: "Feature deleted",
         description: "The feature has been moved to trash",
@@ -93,8 +96,8 @@ export function FeatureList() {
         scenarioCount: feature.scenarioCount,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       toast({
         title: "Feature copied",
         description: "A copy of the feature has been created",
@@ -111,7 +114,7 @@ export function FeatureList() {
 
   const handleGenerateFeature = async (e: React.FormEvent) => {
     e.preventDefault();
-    generateFeatureMutation.mutate();
+    await generateFeatureMutation.mutateAsync();
   };
 
   const renderContent = () => {
@@ -126,8 +129,8 @@ export function FeatureList() {
               <div className="h-10 bg-muted rounded w-1/4"></div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
               <div key={i} className="bg-black rounded-lg p-6 space-y-4">
                 <div className="h-6 bg-muted rounded w-3/4"></div>
                 <div className="h-20 bg-muted rounded"></div>
@@ -190,7 +193,7 @@ export function FeatureList() {
           </form>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
@@ -203,6 +206,7 @@ export function FeatureList() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
+                  layout
                 >
                   <Card className="bg-black hover:bg-black/70 transition-colors h-full">
                     <div className="p-6">
