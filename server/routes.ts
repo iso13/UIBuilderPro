@@ -30,18 +30,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actualScenarioCount = scenarioCount;
 
       try {
+        // Generate feature content
         featureContent = await generateFeature(title, story, actualScenarioCount);
+        console.log("Generated feature content:", featureContent);
 
-        // Analyze feature complexity
+        // Analyze feature complexity and quality
         const complexity = await analyzeFeatureComplexity(featureContent);
+        console.log("Complexity analysis:", complexity);
+
         const analysis = await analyzeFeature(featureContent, title);
+        console.log("Feature analysis:", analysis);
 
         // Save feature to database
         const feature = await storage.createFeature({
           title,
           story,
           generatedContent: featureContent,
-          scenarioCount,
+          scenarioCount: actualScenarioCount,
           userId,
         });
 
@@ -55,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           scenarioCount: actualScenarioCount,
         });
 
-        // Return feature with analysis
+        // Return complete response
         res.json({
           feature,
           complexity,
@@ -255,6 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             res.status(500).json({ message: error.message });
         }
     });
+
 
 
   app.post("/api/features/export-multiple", requireAuth, async (req: Request, res: Response) => {

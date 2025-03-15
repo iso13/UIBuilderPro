@@ -143,7 +143,12 @@ export function FeatureList() {
 
   const handleGenerateFeature = async (e: React.FormEvent) => {
     e.preventDefault();
-    await generateFeatureMutation.mutateAsync();
+    try {
+      const data = await generateFeatureMutation.mutateAsync();
+      console.log("Generated feature with analysis:", data);
+    } catch (error) {
+      console.error("Error generating feature:", error);
+    }
   };
 
   const renderContent = () => {
@@ -278,8 +283,7 @@ export function FeatureList() {
           </div>
         )}
 
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
