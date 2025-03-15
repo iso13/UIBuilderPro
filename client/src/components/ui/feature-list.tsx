@@ -430,18 +430,18 @@ export function FeatureList() {
                     layout
                   >
                     <Card className="bg-black hover:bg-black/70 transition-colors h-full">
-                      <div className="p-4">
-                        <h3 className="text-lg font-semibold mb-2 line-clamp-2">{feature.title}</h3>
-                        <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">{feature.story}</p>
-                        <div className="flex justify-between items-center">
-                          <div className="text-xs text-muted-foreground">
+                      <div className="p-6">
+                        <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                        <p className="text-muted-foreground mb-6 line-clamp-3">{feature.story}</p>
+                        <div className="mt-auto">
+                          <div className="text-sm text-muted-foreground mb-3">
                             {new Date(feature.createdAt).toLocaleDateString()}
                           </div>
-                          <div className="flex gap-1 flex-shrink-0">
+                          <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 hover:bg-white/10"
+                              className="h-8 w-8 hover:bg-white/10"
                               onClick={() => deleteMutation.mutate(feature.id)}
                               disabled={deleteMutation.isPending}
                             >
@@ -450,7 +450,7 @@ export function FeatureList() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 hover:bg-white/10"
+                              className="h-8 w-8 hover:bg-white/10"
                               onClick={() => {
                                 setSelectedFeature(feature);
                                 setEditDialogOpen(true);
@@ -461,7 +461,7 @@ export function FeatureList() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 hover:bg-white/10"
+                              className="h-8 w-8 hover:bg-white/10"
                               onClick={() => exportFeatureMutation.mutate(feature.id)}
                               disabled={exportFeatureMutation.isPending}
                             >
