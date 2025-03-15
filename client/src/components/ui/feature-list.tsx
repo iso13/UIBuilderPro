@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Copy, Trash2, Edit } from "lucide-react";
+import { Copy, Trash2, Edit, Search, Filter, SlidersHorizontal, Laptop } from "lucide-react";
 import type { Feature } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Progress } from "./progress";
@@ -59,6 +59,8 @@ export function FeatureList() {
   const { user } = useAuth();
   const [currentAnalysis, setCurrentAnalysis] = useState<FeatureResponse | null>(null);
   const [generationStep, setGenerationStep] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOption, setSortOption] = useState("newest");
 
   // Features Query with more aggressive refresh
   const { data: features = [], isLoading } = useQuery<Feature[]>({
@@ -327,6 +329,49 @@ export function FeatureList() {
           </div>
         )}
 
+        {/* Features List Header */}
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-2xl font-bold">Generated Features</h2>
+            <p className="text-muted-foreground mt-1">
+              {features.length} feature{features.length !== 1 ? 's' : ''} found
+            </p>
+          </div>
+          <div className="flex gap-4 items-center">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search features..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-[200px]"
+              />
+            </div>
+            <Select value={sortOption} onValueChange={setSortOption}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="alphabetical">Alphabetical</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon">
+                <Filter className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon">
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon">
+                <Laptop className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
@@ -334,55 +379,70 @@ export function FeatureList() {
             </div>
           ) : (
             <AnimatePresence>
-              {features.map((feature) => (
-                <motion.div
-                  key={feature.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  layout
-                >
-                  <Card className="bg-black hover:bg-black/70 transition-colors h-full">
-                    <div className="p-6">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => copyFeatureMutation.mutate(feature)}
-                            disabled={copyFeatureMutation.isPending}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => deleteMutation.mutate(feature.id)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-white/10"
-                            onClick={() => navigate(`/edit/${feature.id}`)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+              {features
+                .filter(feature =>
+                  feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  feature.story.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .sort((a, b) => {
+                  switch (sortOption) {
+                    case 'oldest':
+                      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                    case 'alphabetical':
+                      return a.title.localeCompare(b.title);
+                    default: // newest
+                      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                  }
+                })
+                .map((feature) => (
+                  <motion.div
+                    key={feature.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    layout
+                  >
+                    <Card className="bg-black hover:bg-black/70 transition-colors h-full">
+                      <div className="p-6">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-white/10"
+                              onClick={() => copyFeatureMutation.mutate(feature)}
+                              disabled={copyFeatureMutation.isPending}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-white/10"
+                              onClick={() => deleteMutation.mutate(feature.id)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-white/10"
+                              onClick={() => navigate(`/edit/${feature.id}`)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-muted-foreground mb-4 line-clamp-3">{feature.story}</p>
+                        <div className="text-sm text-muted-foreground">
+                          Created: {new Date(feature.createdAt).toLocaleDateString()}
                         </div>
                       </div>
-                      <p className="text-muted-foreground mb-4 line-clamp-3">{feature.story}</p>
-                      <div className="text-sm text-muted-foreground">
-                        Created: {new Date(feature.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
+                    </Card>
+                  </motion.div>
+                ))}
             </AnimatePresence>
           )}
         </div>
