@@ -14,13 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Archive, Download, Pencil, Search, Undo, Home } from "lucide-react";
+import { Archive, Download, Pencil, Search, Undo, Home, Rocket } from "lucide-react";
 import type { Feature, FeatureFilter } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { FeatureGenerationLoader } from "./feature-generation-loader";
 import { EditFeatureDialog } from "./edit-feature-dialog";
 import { FeatureViewDialog } from "./feature-view-dialog";
-import { Rocket } from "lucide-react";
 import { ScenarioComplexity } from './scenario-complexity';
 
 interface ScenarioData {
@@ -170,6 +169,29 @@ export function FeatureList() {
     },
   });
 
+  const handleGenerateFeature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Check for duplicate title
+      const titleExists = features.some(
+        feature => feature.title.toLowerCase() === title.toLowerCase()
+      );
+
+      if (titleExists) {
+        toast({
+          title: "Error",
+          description: "A feature with this title already exists. Please choose a different title.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await generateFeatureMutation.mutateAsync();
+    } catch (error) {
+      console.error("Error generating feature:", error);
+    }
+  };
+
   const renderFeatureCard = (feature: Feature) => (
     <Card
       className="bg-transparent border-gray-800 h-[180px] w-full cursor-pointer hover:border-gray-700 transition-colors"
@@ -235,15 +257,6 @@ export function FeatureList() {
     </Card>
   );
 
-  const handleGenerateFeature = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await generateFeatureMutation.mutateAsync();
-    } catch (error) {
-      console.error("Error generating feature:", error);
-    }
-  };
-
   // Format the feature content in the desired structure
   const formatFeatureContent = (title: string, story: string) => {
     const storyLines = story.split('\n');
@@ -253,8 +266,6 @@ export function FeatureList() {
 
     const tag = title.toLowerCase().replace(/[^a-z0-9]/g, '');
     return {
-      title,
-      story,
       tag,
       userRole,
       action,
@@ -332,68 +343,67 @@ export function FeatureList() {
             </div>
 
             {currentAnalysis && (
-                  <div className="mt-4 mb-8">
-                    {/* Display the feature title and story */}
-                    <Card className="bg-transparent border-gray-800">
-                      <div className="p-4">
-                        <div className="mb-4">
-                          <h2 className="text-xl font-bold">{currentAnalysis.feature.title}</h2>
-                          <p className="text-muted-foreground mt-2">
-                            {currentAnalysis.feature.story}
-                          </p>
-                        </div>
-                        <pre className="font-mono bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto whitespace-pre text-gray-300">
-                          {currentAnalysis.feature.generatedContent}
-                        </pre>
-                      </div>
-                    </Card>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                      {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
-                        <ScenarioComplexity
-                          key={index}
-                          name={scenario.name}
-                          complexity={scenario.complexity}
-                          factors={scenario.factors}
-                          explanation={scenario.explanation}
-                        />
-                      ))}
+              <div className="mt-4 mb-8">
+                {/* Display the feature title and story */}
+                <Card className="bg-transparent border-gray-800">
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <h2 className="text-xl font-bold">{currentAnalysis.feature.title}</h2>
+                      <p className="text-muted-foreground mt-2">
+                        {currentAnalysis.feature.story}
+                      </p>
                     </div>
-
-                    <Card className="bg-transparent border-gray-800 mt-6">
-                      <div className="p-6">
-                        <h2 className="text-xl font-bold mb-4">Recommendations</h2>
-                        <ul className="space-y-2">
-                          {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
-                            <li key={index} className="text-muted-foreground">
-                              • {recommendation}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </Card>
-
-                    <Card className="bg-transparent border-gray-800 mt-6">
-                      <div className="p-6">
-                        <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
-                        <div className="mb-4">
-                          <p className="text-muted-foreground">
-                            Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
-                          </p>
-                        </div>
-                        <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
-                        <ul className="space-y-2">
-                          {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
-                            <li key={index} className="text-muted-foreground">
-                              • {suggestion}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </Card>
+                    <pre className="font-mono bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto whitespace-pre text-gray-300">
+                      {currentAnalysis.feature.generatedContent}
+                    </pre>
                   </div>
-                )}
+                </Card>
 
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                  {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
+                    <ScenarioComplexity
+                      key={index}
+                      name={scenario.name}
+                      complexity={scenario.complexity}
+                      factors={scenario.factors}
+                      explanation={scenario.explanation}
+                    />
+                  ))}
+                </div>
+
+                <Card className="bg-transparent border-gray-800 mt-6">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Recommendations</h2>
+                    <ul className="space-y-2">
+                      {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
+                        <li key={index} className="text-muted-foreground">
+                          • {recommendation}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
+
+                <Card className="bg-transparent border-gray-800 mt-6">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
+                    <div className="mb-4">
+                      <p className="text-muted-foreground">
+                        Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
+                      </p>
+                    </div>
+                    <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
+                    <ul className="space-y-2">
+                      {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
+                        <li key={index} className="text-muted-foreground">
+                          • {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
+              </div>
+            )}
           </>
         )}
 
