@@ -214,21 +214,28 @@ export function FeatureList() {
 
   // Export Feature Mutation
   const exportFeatureMutation = useMutation({
-    mutationFn: async (featureId: number) => {
-      const response = await apiRequest(
-        "POST",
-        "/api/features/export-multiple",
-        { featureIds: [featureId] }
-      );
+    mutationFn: async (feature: Feature) => {
+      // Create a Blob with the feature content
+      const blob = new Blob([feature.generatedContent || ''], { 
+        type: 'application/msword' 
+      });
 
-      // Create and trigger download
-      const url = window.URL.createObjectURL(new Blob([response]));
+      // Create the download link
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'feature.zip');
+
+      // Create file name from feature title
+      const fileName = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.doc`;
+      link.setAttribute('download', fileName);
+
+      // Trigger download
       document.body.appendChild(link);
       link.click();
       link.remove();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
     },
     onError: () => {
       toast({
@@ -291,7 +298,7 @@ export function FeatureList() {
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
-                  onClick={() => exportFeatureMutation.mutate(feature.id)}
+                  onClick={() => exportFeatureMutation.mutate(feature)}
                   disabled={exportFeatureMutation.isPending}
                 >
                   <Download className="h-3 w-3" />

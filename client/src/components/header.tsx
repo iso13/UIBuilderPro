@@ -6,14 +6,14 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="flex items-center gap-4">
         <Link href="/">
-          <a className="text-sm font-medium transition-colors hover:text-primary">
+          <span className="text-sm font-medium transition-colors hover:text-primary cursor-pointer">
             Home
-          </a>
+          </span>
         </Link>
         <Link href="/analytics">
-          <a className="text-sm font-medium transition-colors hover:text-primary">
+          <span className="text-sm font-medium transition-colors hover:text-primary cursor-pointer">
             Analytics
-          </a>
+          </span>
         </Link>
       </nav>
       <ThemeToggle />
