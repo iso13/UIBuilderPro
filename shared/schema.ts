@@ -89,20 +89,12 @@ export const signupSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof signupSchema>;
 
-// OpenAI schema
-export const featureGenRequestSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-});
-
 // Analytics schema
 export const analyticsEventSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
+  userId: z.number(),
   eventType: z.enum(["feature_generation", "feature_view"]),
-  featureId: z.string().nullable(),
+  featureId: z.number(),
   successful: z.boolean(),
   errorMessage: z.string().nullable(),
   scenarioCount: z.number().nullable(),
-  createdAt: z.string(),
 });
