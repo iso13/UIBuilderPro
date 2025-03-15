@@ -67,7 +67,9 @@ export function FeatureList() {
     console.log('Changing filter to:', value);
     setFilterOption(value as FeatureFilter);
     // Invalidate queries to force a refresh
+    await queryClient.invalidateQueries({ queryKey: ["/api/features", filterOption] });
     await queryClient.invalidateQueries({ queryKey: ["/api/features", value] });
+    await queryClient.refetchQueries({ queryKey: ["/api/features", value] });
   };
 
   // Features Query
@@ -76,7 +78,12 @@ export function FeatureList() {
     queryFn: async () => {
       console.log('Fetching features with filter:', filterOption);
       const response = await apiRequest("GET", `/api/features?filter=${filterOption}`);
-      console.log('Retrieved', response?.length, 'features with filter:', filterOption);
+      console.log('API Response:', response);
+      if (!response) {
+        console.error('No response received from API');
+        throw new Error("Failed to fetch features");
+      }
+      console.log('Retrieved', response.length, 'features with filter:', filterOption);
       return response;
     },
   });
