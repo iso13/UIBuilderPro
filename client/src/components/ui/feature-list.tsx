@@ -155,6 +155,31 @@ export function FeatureList() {
     },
   });
 
+  // Add exportFeatureMutation right after the restore mutation
+  const exportFeatureMutation = useMutation({
+    mutationFn: async (featureId: number) => {
+      const response = await apiRequest("POST", "/api/features/export-multiple", {
+        featureIds: [featureId],
+      }, undefined, { responseType: 'blob' });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'feature.zip');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to export feature",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleGenerateFeature = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
