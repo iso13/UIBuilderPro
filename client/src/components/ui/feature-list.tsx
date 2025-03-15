@@ -21,6 +21,31 @@ import { FeatureGenerationLoader } from "./feature-generation-loader";
 import { EditFeatureDialog } from "./edit-feature-dialog";
 import { FeatureViewDialog } from "./feature-view-dialog";
 import { Rocket } from "lucide-react";
+import { ScenarioComplexity } from './scenario-complexity';
+
+interface ScenarioData {
+  name: string;
+  complexity: number;
+  factors: {
+    stepCount: number;
+    dataDependencies: number;
+    conditionalLogic: number;
+    technicalDifficulty: number;
+  };
+  explanation: string;
+}
+
+interface AnalysisData {
+  feature: Feature;
+  complexity: {
+    scenarios: ScenarioData[];
+    recommendations: string[];
+  };
+  analysis: {
+    quality_score: number;
+    suggestions: string[];
+  };
+}
 
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
@@ -31,7 +56,7 @@ export function FeatureList() {
   const [scenarioCount, setScenarioCount] = useState("1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentAnalysis, setCurrentAnalysis] = useState<any | null>(null);
+  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisData | null>(null);
   const [generationStep, setGenerationStep] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
@@ -121,10 +146,13 @@ export function FeatureList() {
   // Export Feature Mutation
   const exportFeatureMutation = useMutation({
     mutationFn: async (featureId: number) => {
-      const response = await apiRequest("POST", "/api/features/export-multiple", {
-        featureIds: [featureId],
-      }, undefined, { responseType: 'blob' });
+      const response = await apiRequest(
+        "POST",
+        "/api/features/export-multiple",
+        { featureIds: [featureId] }
+      );
 
+      // Create and trigger download
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
@@ -143,7 +171,7 @@ export function FeatureList() {
   });
 
   const renderFeatureCard = (feature: Feature) => (
-    <Card 
+    <Card
       className="bg-transparent border-gray-800 h-[180px] w-full cursor-pointer hover:border-gray-700 transition-colors"
       onClick={() => {
         setSelectedFeature(feature);
@@ -387,16 +415,64 @@ export function FeatureList() {
         {/* Generated Feature Content */}
         {currentAnalysis && (
           <div className="space-y-6">
-            <Card className="bg-black">
-              <div>
+            <Card className="bg-transparent border-gray-800">
+              <div className="p-6">
                 <h2 className="text-xl font-bold mb-4">Generated Feature</h2>
                 <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
                   {currentAnalysis.feature.generatedContent}
                 </pre>
               </div>
             </Card>
+
+            {/* Complexity Analysis */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
+                <ScenarioComplexity
+                  key={index}
+                  name={scenario.name}
+                  complexity={scenario.complexity}
+                  factors={scenario.factors}
+                  explanation={scenario.explanation}
+                />
+              ))}
+            </div>
+
+            {/* Recommendations */}
+            <Card className="bg-transparent border-gray-800">
+              <div className="p-6">
+                <h2 className="text-xl font-bold mb-4">Recommendations</h2>
+                <ul className="space-y-2">
+                  {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
+                    <li key={index} className="text-muted-foreground">
+                      • {recommendation}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+
+            {/* Quality Analysis */}
+            <Card className="bg-transparent border-gray-800">
+              <div className="p-6">
+                <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
+                <div className="mb-4">
+                  <p className="text-muted-foreground">
+                    Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
+                  </p>
+                </div>
+                <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
+                <ul className="space-y-2">
+                  {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
+                    <li key={index} className="text-muted-foreground">
+                      • {suggestion}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
           </div>
         )}
+
       </>
     );
   };
