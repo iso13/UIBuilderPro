@@ -399,7 +399,7 @@ export function FeatureList() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 mt-8">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
@@ -430,14 +430,14 @@ export function FeatureList() {
                     layout
                   >
                     <Card className="bg-black hover:bg-black/70 transition-colors h-full">
-                      <div className="p-6">
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-lg font-semibold mb-3 line-clamp-2">{feature.title}</h3>
-                          <div className="flex gap-2">
+                      <div className="p-4">
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className="text-lg font-semibold mb-2 line-clamp-2">{feature.title}</h3>
+                          <div className="flex gap-1 flex-shrink-0">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-white/10"
+                              className="h-7 w-7 hover:bg-white/10"
                               onClick={() => deleteMutation.mutate(feature.id)}
                               disabled={deleteMutation.isPending}
                             >
@@ -446,7 +446,7 @@ export function FeatureList() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-white/10"
+                              className="h-7 w-7 hover:bg-white/10"
                               onClick={() => {
                                 setSelectedFeature(feature);
                                 setEditDialogOpen(true);
@@ -457,7 +457,7 @@ export function FeatureList() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-white/10"
+                              className="h-7 w-7 hover:bg-white/10"
                               onClick={() => exportFeatureMutation.mutate(feature.id)}
                               disabled={exportFeatureMutation.isPending}
                             >
@@ -465,8 +465,8 @@ export function FeatureList() {
                             </Button>
                           </div>
                         </div>
-                        <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">{feature.story}</p>
-                        <div className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">{feature.story}</p>
+                        <div className="text-xs text-muted-foreground">
                           Created: {new Date(feature.createdAt).toLocaleDateString()}
                         </div>
                       </div>
