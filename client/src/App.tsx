@@ -21,40 +21,14 @@ const Loading = () => (
   </div>
 );
 
-function AuthenticatedRoutes() {
+function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
       <main className="pt-16">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/analytics" component={Analytics} />
-          <Route component={NotFound} />
-        </Switch>
+        {children}
       </main>
     </>
-  );
-}
-
-function UnauthenticatedRoutes() {
-  return (
-    <Switch>
-      <Route path="/login">
-        <Suspense fallback={<Loading />}>
-          <Login />
-        </Suspense>
-      </Route>
-      <Route path="/signup">
-        <Suspense fallback={<Loading />}>
-          <Signup />
-        </Suspense>
-      </Route>
-      <Route>
-        <Suspense fallback={<Loading />}>
-          <Login />
-        </Suspense>
-      </Route>
-    </Switch>
   );
 }
 
@@ -65,14 +39,30 @@ export default function App() {
         <AuthProvider>
           <Router>
             <div className="min-h-screen bg-background">
-              <Switch>
-                <Route path="/login" component={UnauthenticatedRoutes} />
-                <Route path="/signup" component={UnauthenticatedRoutes} />
-                <ProtectedRoute path="*" component={AuthenticatedRoutes} />
-              </Switch>
+              <Suspense fallback={<Loading />}>
+                <Switch>
+                  <Route path="/login">
+                    <Login />
+                  </Route>
+                  <Route path="/signup">
+                    <Signup />
+                  </Route>
+                  <Route path="/">
+                    <ProtectedRoute path="*" component={() => (
+                      <AuthenticatedLayout>
+                        <Switch>
+                          <Route path="/" component={Home} />
+                          <Route path="/analytics" component={Analytics} />
+                          <Route component={NotFound} />
+                        </Switch>
+                      </AuthenticatedLayout>
+                    )} />
+                  </Route>
+                </Switch>
+              </Suspense>
             </div>
+            <Toaster position="top-right" />
           </Router>
-          <Toaster position="top-right" />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
