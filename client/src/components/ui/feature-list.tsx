@@ -21,6 +21,7 @@ import type { Feature } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Progress } from "./progress";
 import { ScenarioComplexity } from "./scenario-complexity";
+import { FeatureGenerationLoader } from "./feature-generation-loader";
 
 // Add type for the response
 interface FeatureResponse {
@@ -57,6 +58,7 @@ export function FeatureList() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [currentAnalysis, setCurrentAnalysis] = useState<FeatureResponse | null>(null);
+  const [generationStep, setGenerationStep] = useState<number | null>(null);
 
   // Features Query with more aggressive refresh
   const { data: features = [], isLoading } = useQuery<Feature[]>({
@@ -72,11 +74,21 @@ export function FeatureList() {
       if (!title || !story) {
         throw new Error("Title and story are required");
       }
+      setGenerationStep(0); // Start with "Analyzing Input"
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setGenerationStep(1); // Move to "Generating Scenarios"
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       const response = await apiRequest("POST", "/api/features", {
         title,
         story,
         scenarioCount: parseInt(scenarioCount),
       });
+
+      setGenerationStep(2); // Move to "Finalizing"
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       return response as FeatureResponse;
     },
     onSuccess: async (data) => {
@@ -92,8 +104,10 @@ export function FeatureList() {
       // Force refetch features
       await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       await queryClient.refetchQueries({ queryKey: ["/api/features"] });
+      setGenerationStep(null); // Hide the loader
     },
     onError: (error: Error) => {
+      setGenerationStep(null); // Hide the loader
       toast({
         title: "Error",
         description: error.message || "Failed to generate feature",
@@ -217,6 +231,19 @@ export function FeatureList() {
             </div>
           </form>
         </div>
+
+        {/* Feature Generation Status */}
+        {generationStep !== null && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-2">Generating Feature</h2>
+              <p className="text-muted-foreground mb-6">
+                Please wait while we generate your feature content...
+              </p>
+              <FeatureGenerationLoader currentStep={generationStep} />
+            </div>
+          </div>
+        )}
 
         {/* Generated Feature Content */}
         {currentAnalysis && (
