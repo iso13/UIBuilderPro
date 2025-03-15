@@ -16,8 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Archive, Download, Pencil, Search, Filter, SlidersHorizontal, Laptop } from "lucide-react";
-import type { Feature } from "@shared/schema";
+import { Archive, Download, Pencil, Search, Filter, SlidersHorizontal, Laptop, Undo } from "lucide-react";
+import type { Feature, FeatureFilter } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Progress } from "./progress";
 import { ScenarioComplexity } from "./scenario-complexity";
@@ -63,13 +63,14 @@ export function FeatureList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
 
-  // Features Query with more aggressive refresh
+  // Features Query with archive filter
   const { data: features = [], isLoading } = useQuery<Feature[]>({
-    queryKey: ["/api/features"],
+    queryKey: ["/api/features", filterOption],
     staleTime: 0,
-    gcTime: 0, // Changed from cacheTime to gcTime as per TanStack Query v5
-    refetchInterval: 1000, // Poll every second while the component is mounted
+    gcTime: 0,
+    refetchInterval: 1000,
   });
 
   // Generate Feature Mutation
@@ -120,7 +121,7 @@ export function FeatureList() {
     },
   });
 
-  // Delete Feature Mutation
+  // Delete (Archive) Feature Mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/features/${id}`);
@@ -128,8 +129,22 @@ export function FeatureList() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
       toast({
-        title: "Feature deleted",
-        description: "The feature has been moved to trash",
+        title: "Feature archived",
+        description: "The feature has been moved to archive",
+      });
+    },
+  });
+
+  // Restore Feature Mutation
+  const restoreMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/features/${id}/restore`);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Feature restored",
+        description: "The feature has been restored from archive",
       });
     },
   });
@@ -197,21 +212,24 @@ export function FeatureList() {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <>
-          <div className="mb-8 rounded-lg p-6 bg-black">
-            <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
-            <div className="space-y-4 animate-pulse">
-              <div className="h-10 bg-muted rounded"></div>
-              <div className="h-32 bg-muted rounded"></div>
-              <div className="h-10 bg-muted rounded w-1/4"></div>
-            </div>
+        <div className="mb-8 rounded-lg p-6 bg-black">
+          <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
+          <div className="space-y-4 animate-pulse">
+            <div className="h-10 bg-muted rounded"></div>
+            <div className="h-32 bg-muted rounded"></div>
+            <div className="h-10 bg-muted rounded w-1/4"></div>
           </div>
-        </>
+        </div>
       );
     }
 
     return (
-      <>
+      <div className="container mx-auto px-6 py-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
+          <p className="text-muted-foreground">Generate Cucumber features using AI</p>
+        </div>
+
         <div className="mb-8 rounded-lg p-8 bg-transparent border border-gray-800">
           <h2 className="text-2xl font-bold mb-6">Generate New Feature</h2>
           <form onSubmit={handleGenerateFeature} className="space-y-6">
@@ -377,6 +395,16 @@ export function FeatureList() {
                 className="pl-9 w-[200px]"
               />
             </div>
+            <Select value={filterOption} onValueChange={setFilterOption as (value: string) => void}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active Features</SelectItem>
+                <SelectItem value="deleted">Archived Features</SelectItem>
+                <SelectItem value="all">All Features</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={sortOption} onValueChange={setSortOption}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Sort by" />
@@ -387,17 +415,6 @@ export function FeatureList() {
                 <SelectItem value="alphabetical">Alphabetical</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon">
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon">
-                <Laptop className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -405,7 +422,13 @@ export function FeatureList() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
-              <p className="text-muted-foreground">No features found. Generate your first feature!</p>
+              <p className="text-muted-foreground">
+                {filterOption === "deleted"
+                  ? "No archived features found"
+                  : filterOption === "active"
+                  ? "No active features found. Generate your first feature!"
+                  : "No features found"}
+              </p>
             </div>
           ) : (
             <AnimatePresence>
@@ -441,33 +464,49 @@ export function FeatureList() {
                             {new Date(feature.createdAt).toLocaleDateString()}
                           </div>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => deleteMutation.mutate(feature.id)}
-                              disabled={deleteMutation.isPending}
-                            >
-                              <Archive className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => copyFeatureMutation.mutate(feature)}
-                              disabled={copyFeatureMutation.isPending}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => exportFeatureMutation.mutate(feature.id)}
-                              disabled={exportFeatureMutation.isPending}
-                            >
-                              <Download className="h-3 w-3" />
-                            </Button>
+                            {feature.deleted ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => restoreMutation.mutate(feature.id)}
+                                disabled={restoreMutation.isPending}
+                              >
+                                <Undo className="h-3 w-3" />
+                              </Button>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => deleteMutation.mutate(feature.id)}
+                                  disabled={deleteMutation.isPending}
+                                >
+                                  <Archive className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => {
+                                    setSelectedFeature(feature);
+                                    setEditDialogOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => exportFeatureMutation.mutate(feature.id)}
+                                  disabled={exportFeatureMutation.isPending}
+                                >
+                                  <Download className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -477,19 +516,13 @@ export function FeatureList() {
             </AnimatePresence>
           )}
         </div>
-      </>
+      </div>
     );
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="w-full px-6 py-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
-          <p className="text-muted-foreground">Generate Cucumber features using AI</p>
-        </div>
-        {renderContent()}
-      </div>
+      {renderContent()}
       <EditFeatureDialog
         feature={selectedFeature}
         open={editDialogOpen}
