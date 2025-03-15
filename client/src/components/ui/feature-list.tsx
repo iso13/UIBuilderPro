@@ -62,10 +62,23 @@ export function FeatureList() {
   const [generationStep, setGenerationStep] = useState<number | null>(null);
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisData | null>(null);
 
+  // Filter change handler
+  const handleFilterChange = async (value: string) => {
+    console.log('Changing filter to:', value);
+    setFilterOption(value as FeatureFilter);
+    // Invalidate queries to force a refresh
+    await queryClient.invalidateQueries({ queryKey: ["/api/features", value] });
+  };
+
   // Features Query
-  const { data: features = [], isLoading } = useQuery<Feature[]>({
+  const { data: features = [], isLoading, error } = useQuery<Feature[]>({
     queryKey: ["/api/features", filterOption],
-    queryFn: () => apiRequest("GET", `/api/features?filter=${filterOption}`),
+    queryFn: async () => {
+      console.log('Fetching features with filter:', filterOption);
+      const response = await apiRequest("GET", `/api/features?filter=${filterOption}`);
+      console.log('Retrieved', response?.length, 'features with filter:', filterOption);
+      return response;
+    },
   });
 
   const checkDuplicateTitle = (titleToCheck: string) => {
@@ -460,7 +473,10 @@ export function FeatureList() {
                 className="pl-9 w-[200px]"
               />
             </div>
-            <Select value={filterOption} onValueChange={(value) => setFilterOption(value as FeatureFilter)}>
+            <Select
+              value={filterOption}
+              onValueChange={handleFilterChange}
+            >
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
@@ -569,7 +585,7 @@ export function FeatureList() {
             <Button
               variant="outline"
               className="ml-4"
-              onClick={() => setFilterOption("active")}
+              onClick={() => handleFilterChange("active")}
             >
               <Home className="h-4 w-4 mr-2" />
               Back to Home
@@ -577,6 +593,11 @@ export function FeatureList() {
           )}
         </div>
         {renderContent()}
+        {error && (
+          <div className="text-red-500 mt-4">
+            Error loading features. Please try again.
+          </div>
+        )}
       </div>
     </div>
   );
