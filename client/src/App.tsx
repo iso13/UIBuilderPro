@@ -25,15 +25,11 @@ function AuthenticatedRoutes() {
   return (
     <>
       <Header />
-      <main className="pt-16"> {/* Add padding top to account for fixed header */}
+      <main className="pt-16">
         <Switch>
           <Route path="/" component={Home} />
-          <Route path="/analytics">
-            <Suspense fallback={<Loading />}>
-              <Analytics />
-            </Suspense>
-          </Route>
-          <Route path="*" component={NotFound} />
+          <Route path="/analytics" component={Analytics} />
+          <Route component={NotFound} />
         </Switch>
       </main>
     </>
@@ -42,25 +38,23 @@ function AuthenticatedRoutes() {
 
 function UnauthenticatedRoutes() {
   return (
-    <>
-      <Switch>
-        <Route path="/login">
-          <Suspense fallback={<Loading />}>
-            <Login />
-          </Suspense>
-        </Route>
-        <Route path="/signup">
-          <Suspense fallback={<Loading />}>
-            <Signup />
-          </Suspense>
-        </Route>
-        <Route path="*">
-          <Suspense fallback={<Loading />}>
-            <Login />
-          </Suspense>
-        </Route>
-      </Switch>
-    </>
+    <Switch>
+      <Route path="/login">
+        <Suspense fallback={<Loading />}>
+          <Login />
+        </Suspense>
+      </Route>
+      <Route path="/signup">
+        <Suspense fallback={<Loading />}>
+          <Signup />
+        </Suspense>
+      </Route>
+      <Route>
+        <Suspense fallback={<Loading />}>
+          <Login />
+        </Suspense>
+      </Route>
+    </Switch>
   );
 }
 

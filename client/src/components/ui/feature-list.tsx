@@ -215,20 +215,9 @@ export function FeatureList() {
   // Export Feature Mutation
   const exportFeatureMutation = useMutation({
     mutationFn: async (feature: Feature) => {
-      // Format the content for Word document
-      const formattedContent = `
-Feature: ${feature.title}
-
-User Story:
-${feature.story}
-
-Generated Content:
-${feature.generatedContent || ''}
-      `.trim();
-
       // Create a Blob with the feature content
-      const blob = new Blob([formattedContent], { 
-        type: 'application/msword' 
+      const blob = new Blob([feature.generatedContent || ''], { 
+        type: 'text/plain' 
       });
 
       // Create the download link
@@ -237,7 +226,7 @@ ${feature.generatedContent || ''}
       link.href = url;
 
       // Create sanitized file name from feature title
-      const fileName = `${feature.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.doc`;
+      const fileName = `${feature.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.feature`;
       link.setAttribute('download', fileName);
 
       // Trigger download
