@@ -20,6 +20,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { FeatureGenerationLoader } from "./feature-generation-loader";
 import { EditFeatureDialog } from "./edit-feature-dialog";
 import { FeatureViewDialog } from "./feature-view-dialog";
+import { Rocket } from "lucide-react";
 
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
@@ -258,30 +259,29 @@ export function FeatureList() {
                   required
                 />
               </div>
-              <div className="flex gap-4 items-center">
-                <div className="w-64">
-                  <Label htmlFor="scenarioCount" className="text-base mb-2 block">Number of Scenarios</Label>
-                  <Select value={scenarioCount} onValueChange={setScenarioCount}>
-                    <SelectTrigger className="w-full bg-background h-12">
-                      <SelectValue placeholder="Number of Scenarios" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5].map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
-                          {num} Scenario{num > 1 ? "s" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-8 h-12 mt-8"
-                  disabled={generateFeatureMutation.isPending}
-                >
-                  {generateFeatureMutation.isPending ? "Generating..." : "Generate Feature"}
-                </Button>
+              <div className="w-64">
+                <Label htmlFor="scenarioCount" className="text-base mb-2 block">Number of Scenarios</Label>
+                <Select value={scenarioCount} onValueChange={setScenarioCount}>
+                  <SelectTrigger className="w-full bg-background h-12">
+                    <SelectValue placeholder="Number of Scenarios" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num} Scenario{num > 1 ? "s" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              <Button
+                type="submit"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 flex items-center justify-center gap-2 mt-6"
+                disabled={generateFeatureMutation.isPending}
+              >
+                <Rocket className="h-4 w-4" />
+                {generateFeatureMutation.isPending ? "Generating..." : "Generate Feature"}
+              </Button>
             </form>
           </div>
         )}
