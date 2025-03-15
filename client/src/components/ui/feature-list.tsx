@@ -150,10 +150,10 @@ export function FeatureList() {
       }}
     >
       <div className="p-4 h-full flex flex-col">
-        <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
-        <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
+        <h3 className="text-base font-bold text-foreground mb-2">{feature.title}</h3>
+        <p className="text-sm text-muted-foreground mb-auto line-clamp-3">{feature.story}</p>
         <div className="flex justify-between items-center pt-4">
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-muted-foreground">
             {new Date(feature.createdAt).toLocaleDateString()}
           </div>
           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
