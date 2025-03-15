@@ -247,15 +247,20 @@ export function FeatureList() {
   // Format the feature content in the desired structure
   const formatFeatureContent = (title: string, story: string) => {
     const storyLines = story.split('\n');
-    const userRole = storyLines.find(line => line.toLowerCase().startsWith('as'))?.replace('As', '')?.trim() || '';
-    const action = storyLines.find(line => line.toLowerCase().includes('i want'))?.replace(/^.*?want/, '')?.trim() || '';
-    const benefit = storyLines.find(line => line.toLowerCase().includes('so that'))?.replace(/^.*?that/, '')?.trim() || '';
+    const userRole = storyLines.find(line => line.toLowerCase().includes('as a'))?.replace(/^.*?as a/i, '')?.trim() || '';
+    const action = storyLines.find(line => line.toLowerCase().includes('i want to'))?.replace(/^.*?want to/i, '')?.trim() || '';
+    const benefit = storyLines.find(line => line.toLowerCase().includes('so that'))?.replace(/^.*?so that/i, '')?.trim() || '';
 
-    return `@orderTrackingSystem
+    const tag = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const formattedContent = `@${tag}
 Feature: ${title}
-As ${userRole}
-I want ${action}
-So that ${benefit}`;
+As a ${userRole}
+I want to ${action}
+So that ${benefit}
+
+${currentAnalysis?.feature?.generatedContent || ''}`;
+
+    return formattedContent;
   };
 
   const renderContent = () => {
@@ -328,61 +333,59 @@ So that ${benefit}`;
             </div>
 
             {currentAnalysis && (
-                <div className="mt-4 mb-8">
-                  <Card className="bg-transparent border-gray-800">
-                    <div className="p-4">
-                      <pre className="font-mono bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto whitespace-pre text-gray-300">
-                        {formatFeatureContent(currentAnalysis.feature.title, currentAnalysis.feature.story)}
-                        {'\n\n'}
-                        {currentAnalysis.feature.generatedContent}
-                      </pre>
-                    </div>
-                  </Card>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
-                      <ScenarioComplexity
-                        key={index}
-                        name={scenario.name}
-                        complexity={scenario.complexity}
-                        factors={scenario.factors}
-                        explanation={scenario.explanation}
-                      />
-                    ))}
+              <div className="mt-4 mb-8">
+                <Card className="bg-transparent border-gray-800">
+                  <div className="p-4">
+                    <pre className="font-mono bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto whitespace-pre text-gray-300">
+                      {formatFeatureContent(currentAnalysis.feature.title, currentAnalysis.feature.story)}
+                    </pre>
                   </div>
+                </Card>
 
-                  <Card className="bg-transparent border-gray-800 mt-6">
-                    <div className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Recommendations</h2>
-                      <ul className="space-y-2">
-                        {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
-                          <li key={index} className="text-muted-foreground">
-                            • {recommendation}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </Card>
-
-                  <Card className="bg-transparent border-gray-800 mt-6">
-                    <div className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
-                      <div className="mb-4">
-                        <p className="text-muted-foreground">
-                          Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
-                        </p>
-                      </div>
-                      <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
-                      <ul className="space-y-2">
-                        {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
-                          <li key={index} className="text-muted-foreground">
-                            • {suggestion}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </Card>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                  {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
+                    <ScenarioComplexity
+                      key={index}
+                      name={scenario.name}
+                      complexity={scenario.complexity}
+                      factors={scenario.factors}
+                      explanation={scenario.explanation}
+                    />
+                  ))}
                 </div>
+
+                <Card className="bg-transparent border-gray-800 mt-6">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Recommendations</h2>
+                    <ul className="space-y-2">
+                      {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
+                        <li key={index} className="text-muted-foreground">
+                          • {recommendation}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
+
+                <Card className="bg-transparent border-gray-800 mt-6">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
+                    <div className="mb-4">
+                      <p className="text-muted-foreground">
+                        Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
+                      </p>
+                    </div>
+                    <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
+                    <ul className="space-y-2">
+                      {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
+                        <li key={index} className="text-muted-foreground">
+                          • {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
+              </div>
             )}
 
           </>
