@@ -429,11 +429,11 @@ export function FeatureList() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                   >
-                    <Card className="bg-black border-gray-800">
-                      <div className="p-4">
+                    <Card className="bg-black border-gray-800 min-h-[240px]">
+                      <div className="p-4 h-full flex flex-col">
                         <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
-                        <p className="text-sm text-gray-500 mb-4 line-clamp-2">{feature.story}</p>
-                        <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
+                        <div className="flex justify-between items-center pt-4">
                           <div className="text-xs text-gray-600">
                             {new Date(feature.createdAt).toLocaleDateString()}
                           </div>
