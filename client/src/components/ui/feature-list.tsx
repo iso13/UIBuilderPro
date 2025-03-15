@@ -215,8 +215,19 @@ export function FeatureList() {
   // Export Feature Mutation
   const exportFeatureMutation = useMutation({
     mutationFn: async (feature: Feature) => {
+      // Format the content for Word document
+      const formattedContent = `
+Feature: ${feature.title}
+
+User Story:
+${feature.story}
+
+Generated Content:
+${feature.generatedContent || ''}
+      `.trim();
+
       // Create a Blob with the feature content
-      const blob = new Blob([feature.generatedContent || ''], { 
+      const blob = new Blob([formattedContent], { 
         type: 'application/msword' 
       });
 
@@ -225,8 +236,8 @@ export function FeatureList() {
       const link = document.createElement('a');
       link.href = url;
 
-      // Create file name from feature title
-      const fileName = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.doc`;
+      // Create sanitized file name from feature title
+      const fileName = `${feature.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.doc`;
       link.setAttribute('download', fileName);
 
       // Trigger download
@@ -237,10 +248,16 @@ export function FeatureList() {
       // Cleanup
       window.URL.revokeObjectURL(url);
     },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Feature downloaded successfully",
+      });
+    },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to export feature",
+        description: "Failed to download feature",
         variant: "destructive",
       });
     },
