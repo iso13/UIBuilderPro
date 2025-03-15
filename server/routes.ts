@@ -3,12 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { requireAuth } from "./auth";
 import { FeatureFilter } from "@shared/schema";
-import { generateFeature } from "./openai";
+import { generateFeature, analyzeFeature, analyzeFeatureComplexity } from "./openai";
 import { Feature } from "@shared/schema";
 import JSZip from "jszip";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Features routes
   app.post("/api/features", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.session.userId;
@@ -31,39 +30,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actualScenarioCount = scenarioCount;
 
       try {
-        const generatedFeature = await generateFeature(title, story, actualScenarioCount);
-        featureContent = generatedFeature;
+        featureContent = await generateFeature(title, story, actualScenarioCount);
+
+        // Analyze feature complexity
+        const complexity = await analyzeFeatureComplexity(featureContent);
+        const analysis = await analyzeFeature(featureContent, title);
+
+        // Save feature to database
+        const feature = await storage.createFeature({
+          title,
+          story,
+          generatedContent: featureContent,
+          scenarioCount,
+          userId,
+        });
+
+        // Log analytics event
+        await storage.logAnalyticsEvent({
+          userId,
+          eventType: "feature_generation",
+          featureId: feature.id,
+          successful,
+          errorMessage,
+          scenarioCount: actualScenarioCount,
+        });
+
+        // Return feature with analysis
+        res.json({
+          feature,
+          complexity,
+          analysis
+        });
+
       } catch (error: any) {
         console.error("Error generating feature with OpenAI:", error);
         successful = false;
         errorMessage = error.message;
         featureContent = "";
+        res.status(500).json({ message: error.message });
       }
-
-      console.log("Feature content generated:", featureContent);
-
-      // Save feature to database
-      const feature = await storage.createFeature({
-        title,
-        story,
-        generatedContent: featureContent,
-        scenarioCount,
-        userId,
-      });
-
-      console.log(`Feature created with ID: ${feature.id}`);
-
-      // Log analytics event
-      await storage.logAnalyticsEvent({
-        userId,
-        eventType: "feature_generation",
-        featureId: feature.id,
-        successful,
-        errorMessage,
-        scenarioCount: actualScenarioCount,
-      });
-
-      res.json(feature);
     } catch (error: any) {
       console.error("Error in feature creation endpoint:", error);
       res.status(500).json({ message: error.message });

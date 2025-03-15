@@ -19,6 +19,33 @@ import { useLocation } from "wouter";
 import { Copy, Trash2, Edit } from "lucide-react";
 import type { Feature } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { Progress } from "./progress";
+import { ScenarioComplexity } from "./scenario-complexity";
+
+// Add type for the response
+interface FeatureResponse {
+  feature: Feature;
+  complexity: {
+    overallComplexity: number;
+    scenarios: {
+      name: string;
+      complexity: number;
+      factors: {
+        stepCount: number;
+        dataDependencies: number;
+        conditionalLogic: number;
+        technicalDifficulty: number;
+      };
+      explanation: string;
+    }[];
+    recommendations: string[];
+  };
+  analysis: {
+    quality_score: number;
+    suggestions: string[];
+    improved_title?: string;
+  };
+}
 
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
@@ -29,6 +56,7 @@ export function FeatureList() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [currentAnalysis, setCurrentAnalysis] = useState<FeatureResponse | null>(null);
 
   // Features Query with more aggressive refresh
   const { data: features = [], isLoading } = useQuery<Feature[]>({
@@ -49,9 +77,10 @@ export function FeatureList() {
         story,
         scenarioCount: parseInt(scenarioCount),
       });
-      return response;
+      return response as FeatureResponse;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      setCurrentAnalysis(data);
       toast({
         title: "Success",
         description: "Feature generated successfully",
@@ -177,7 +206,7 @@ export function FeatureList() {
                 <SelectContent>
                   {[1, 2, 3, 4, 5].map((num) => (
                     <SelectItem key={num} value={num.toString()}>
-                      {num} Scenario{num > 1 ? 's' : ''}
+                      {num} Scenario{num > 1 ? "s" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -192,6 +221,63 @@ export function FeatureList() {
             </div>
           </form>
         </div>
+
+        {/* Analysis Section */}
+        {currentAnalysis && (
+          <div className="mt-8 space-y-6">
+            <Card className="bg-black p-6">
+              <h2 className="text-xl font-bold mb-4">Analysis Results</h2>
+
+              <div className="grid gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Quality Score</h3>
+                  <Progress value={currentAnalysis.analysis.quality_score} className="h-2" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {currentAnalysis.analysis.quality_score}/100
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Suggestions</h3>
+                  <ul className="space-y-2">
+                    {currentAnalysis.analysis.suggestions.map((suggestion, index) => (
+                      <li key={index} className="text-sm text-muted-foreground">
+                        • {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Scenario Complexity</h3>
+                  <div className="grid gap-4">
+                    {currentAnalysis.complexity.scenarios.map((scenario, index) => (
+                      <ScenarioComplexity
+                        key={index}
+                        name={scenario.name}
+                        complexity={scenario.complexity}
+                        factors={scenario.factors}
+                        explanation={scenario.explanation}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Recommendations</h3>
+                  <ul className="space-y-2">
+                    {currentAnalysis.complexity.recommendations.map((recommendation, index) => (
+                      <li key={index} className="text-sm text-muted-foreground">
+                        • {recommendation}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {!features || features.length === 0 ? (
