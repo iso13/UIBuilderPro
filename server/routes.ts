@@ -90,9 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filter = (req.query.filter as FeatureFilter) || "active";
       console.log("Fetching features with filter:", filter);
 
-      let features = await storage.getAllFeatures(filter === "all");
-      features = Array.isArray(features) ? features : [];
-
+      const features = await storage.getFeatures(userId, filter);
       return res.json(features);
     } catch (error: any) {
       console.error("Error fetching features:", error);
@@ -260,7 +258,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             res.status(500).json({ message: error.message });
         }
     });
-
 
 
   app.post("/api/features/export-multiple", requireAuth, async (req: Request, res: Response) => {

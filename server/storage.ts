@@ -186,16 +186,25 @@ export class PostgresStorage implements IStorage {
     return analytic;
   }
 
-  async getFeatures(userId: number, filter: FeatureFilter = "all"): Promise<Feature[]> {
-    const query = db.select().from(features);
+  async getFeatures(userId: number, filter: FeatureFilter = "active"): Promise<Feature[]> {
+    try {
+      let query = db.select().from(features).where(eq(features.userId, userId));
 
-    if (filter === "active") {
-      return await query.where(eq(features.deleted, false));
-    } else if (filter === "deleted") {
-      return await query.where(eq(features.deleted, true));
+      // Apply filter based on deleted status
+      if (filter === "active") {
+        query = query.where(eq(features.deleted, false));
+      } else if (filter === "deleted") {
+        query = query.where(eq(features.deleted, true));
+      }
+      // For "all", we don't add additional deleted filter
+
+      const result = await query;
+      console.log(`Retrieved ${result.length} features with filter: ${filter}`);
+      return result || [];
+    } catch (error) {
+      console.error("Error in getFeatures:", error);
+      return [];
     }
-
-    return await query;
   }
 }
 

@@ -68,10 +68,18 @@ export function FeatureList() {
   // Features Query with archive filter
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features", filterOption],
+    queryFn: () => apiRequest("GET", `/api/features?filter=${filterOption}`),
     staleTime: 0,
     gcTime: 0,
     refetchInterval: 1000,
   });
+
+  // Update the filter change handler
+  const handleFilterChange = (value: string) => {
+    setFilterOption(value as FeatureFilter);
+    // Clear current analysis when switching views
+    setCurrentAnalysis(null);
+  };
 
   // Generate Feature Mutation
   const generateFeatureMutation = useMutation({
@@ -413,7 +421,7 @@ export function FeatureList() {
                 className="pl-9 w-[200px]"
               />
             </div>
-            <Select value={filterOption} onValueChange={setFilterOption as (value: string) => void}>
+            <Select value={filterOption} onValueChange={handleFilterChange}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
