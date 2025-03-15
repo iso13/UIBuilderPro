@@ -169,23 +169,35 @@ export function FeatureList() {
     },
   });
 
+  const checkDuplicateTitle = (titleToCheck: string) => {
+    const titleExists = features.some(
+      feature => feature.title.toLowerCase() === titleToCheck.toLowerCase()
+    );
+
+    if (titleExists) {
+      toast({
+        title: "Error",
+        description: "A feature with this title already exists. Please choose a different title.",
+        variant: "destructive",
+      });
+      return true;
+    }
+    return false;
+  };
+
+  const handleTitleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.target.value) {
+      checkDuplicateTitle(e.target.value);
+    }
+  };
+
   const handleGenerateFeature = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Check for duplicate title
-      const titleExists = features.some(
-        feature => feature.title.toLowerCase() === title.toLowerCase()
-      );
-
-      if (titleExists) {
-        toast({
-          title: "Error",
-          description: "A feature with this title already exists. Please choose a different title.",
-          variant: "destructive",
-        });
+      // Double check for duplicates before submission
+      if (checkDuplicateTitle(title)) {
         return;
       }
-
       await generateFeatureMutation.mutateAsync();
     } catch (error) {
       console.error("Error generating feature:", error);
@@ -301,6 +313,7 @@ export function FeatureList() {
                     placeholder="Enter feature title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    onBlur={handleTitleBlur}
                     className="bg-background w-full h-12 text-base"
                     required
                   />
