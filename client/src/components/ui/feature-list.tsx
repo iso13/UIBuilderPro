@@ -51,15 +51,16 @@ export function FeatureList() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [story, setStory] = useState("");
   const [scenarioCount, setScenarioCount] = useState("1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisData | null>(null);
-  const [generationStep, setGenerationStep] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
   const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
+  const [generationStep, setGenerationStep] = useState<number | null>(null);
+  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisData | null>(null);
 
   // Features Query
   const { data: features = [], isLoading } = useQuery<Feature[]>({
@@ -67,27 +68,78 @@ export function FeatureList() {
     queryFn: () => apiRequest("GET", `/api/features?filter=${filterOption}`),
   });
 
+  const checkDuplicateTitle = (titleToCheck: string) => {
+    if (!titleToCheck) return false;
+
+    const titleExists = features.some(
+      feature => feature.title.toLowerCase() === titleToCheck.toLowerCase()
+    );
+
+    if (titleExists) {
+      const errorMessage = "A feature with this title already exists. Please choose a different title.";
+      setTitleError(errorMessage);
+      toast({
+        title: "Duplicate Feature Title",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return true;
+    }
+
+    setTitleError(null);
+    return false;
+  };
+
+  const handleTitleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value.trim();
+    if (value) {
+      checkDuplicateTitle(value);
+    }
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    // Clear error when user starts typing
+    if (titleError) {
+      setTitleError(null);
+    }
+  };
+
+  const handleGenerateFeature = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!title.trim()) {
+      setTitleError("Title is required");
+      return;
+    }
+
+    try {
+      // Double check for duplicates before submission
+      if (checkDuplicateTitle(title)) {
+        return;
+      }
+      await generateFeatureMutation.mutateAsync();
+    } catch (error) {
+      console.error("Error generating feature:", error);
+    }
+  };
+
   // Generate Feature Mutation
   const generateFeatureMutation = useMutation({
     mutationFn: async () => {
       if (!title || !story) {
         throw new Error("Title and story are required");
       }
+
       setGenerationStep(0);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setGenerationStep(1);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       const response = await apiRequest("POST", "/api/features", {
         title,
         story,
         scenarioCount: parseInt(scenarioCount),
       });
 
-      setGenerationStep(2);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      setGenerationStep(null);
       return response;
     },
     onSuccess: async (data) => {
@@ -100,7 +152,6 @@ export function FeatureList() {
       setStory("");
       setScenarioCount("1");
       await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-      setGenerationStep(null);
     },
     onError: (error: Error) => {
       setGenerationStep(null);
@@ -168,41 +219,6 @@ export function FeatureList() {
       });
     },
   });
-
-  const checkDuplicateTitle = (titleToCheck: string) => {
-    const titleExists = features.some(
-      feature => feature.title.toLowerCase() === titleToCheck.toLowerCase()
-    );
-
-    if (titleExists) {
-      toast({
-        title: "Error",
-        description: "A feature with this title already exists. Please choose a different title.",
-        variant: "destructive",
-      });
-      return true;
-    }
-    return false;
-  };
-
-  const handleTitleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (e.target.value) {
-      checkDuplicateTitle(e.target.value);
-    }
-  };
-
-  const handleGenerateFeature = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      // Double check for duplicates before submission
-      if (checkDuplicateTitle(title)) {
-        return;
-      }
-      await generateFeatureMutation.mutateAsync();
-    } catch (error) {
-      console.error("Error generating feature:", error);
-    }
-  };
 
   const renderFeatureCard = (feature: Feature) => (
     <Card
@@ -312,11 +328,16 @@ export function FeatureList() {
                     id="title"
                     placeholder="Enter feature title"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={handleTitleChange}
                     onBlur={handleTitleBlur}
-                    className="bg-background w-full h-12 text-base"
+                    className={`bg-background w-full h-12 text-base ${
+                      titleError ? 'border-red-500 focus:ring-red-500' : ''
+                    }`}
                     required
                   />
+                  {titleError && (
+                    <p className="text-sm text-red-500 mt-1">{titleError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="story" className="text-base">Feature Story</Label>
