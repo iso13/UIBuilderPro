@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "./card";
+import { Card } from "./card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "./textarea";
@@ -27,7 +27,7 @@ export function FeatureList() {
   const [scenarioCount, setScenarioCount] = useState("1");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentAnalysis, setCurrentAnalysis] = useState<FeatureResponse | null>(null);
+  const [currentAnalysis, setCurrentAnalysis] = useState<any | null>(null);
   const [generationStep, setGenerationStep] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
@@ -105,14 +105,12 @@ export function FeatureList() {
       await apiRequest("POST", `/api/features/${id}/restore`);
     },
     onSuccess: async () => {
-      // Invalidate both active and deleted queries
       await queryClient.invalidateQueries({ queryKey: ["/api/features", "active"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/features", "deleted"] });
       toast({
         title: "Feature restored",
         description: "The feature has been restored from archive",
       });
-      // Switch back to active view after restore
       setFilterOption("active");
     },
   });
@@ -151,7 +149,7 @@ export function FeatureList() {
             {new Date(feature.createdAt).toLocaleDateString()}
           </div>
           <div className="flex gap-1">
-            {feature.deleted ? (
+            {filterOption === "deleted" ? (
               <Button
                 variant="ghost"
                 size="icon"
@@ -200,48 +198,14 @@ export function FeatureList() {
     </Card>
   );
 
-  const renderFeatureList = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none">
-      {!features || features.length === 0 ? (
-        <div className="col-span-full text-center py-10">
-          <p className="text-muted-foreground">
-            {filterOption === "deleted"
-              ? "No archived features found"
-              : "No active features found. Generate your first feature!"}
-          </p>
-        </div>
-      ) : (
-        <AnimatePresence>
-          {features
-            .filter(feature =>
-              feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              feature.story.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            .sort((a, b) => {
-              switch (sortOption) {
-                case 'oldest':
-                  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                case 'alphabetical':
-                  return a.title.localeCompare(b.title);
-                default: // newest
-                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-              }
-            })
-            .map((feature) => (
-              <motion.div
-                key={feature.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                layout
-              >
-                {renderFeatureCard(feature)}
-              </motion.div>
-            ))}
-        </AnimatePresence>
-      )}
-    </div>
-  );
+  const handleGenerateFeature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await generateFeatureMutation.mutateAsync();
+    } catch (error) {
+      console.error("Error generating feature:", error);
+    }
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -358,7 +322,46 @@ export function FeatureList() {
         </div>
 
         {/* Feature list */}
-        {renderFeatureList()}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none">
+          {!features || features.length === 0 ? (
+            <div className="col-span-full text-center py-10">
+              <p className="text-muted-foreground">
+                {filterOption === "deleted"
+                  ? "No archived features found"
+                  : "No active features found. Generate your first feature!"}
+              </p>
+            </div>
+          ) : (
+            <AnimatePresence>
+              {features
+                .filter(feature =>
+                  feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  feature.story.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .sort((a, b) => {
+                  switch (sortOption) {
+                    case 'oldest':
+                      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                    case 'alphabetical':
+                      return a.title.localeCompare(b.title);
+                    default: // newest
+                      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                  }
+                })
+                .map((feature) => (
+                  <motion.div
+                    key={feature.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    layout
+                  >
+                    {renderFeatureCard(feature)}
+                  </motion.div>
+                ))}
+            </AnimatePresence>
+          )}
+        </div>
 
         {/* Feature Generation Status */}
         {generationStep !== null && (
@@ -377,39 +380,17 @@ export function FeatureList() {
         {currentAnalysis && (
           <div className="space-y-6">
             <Card className="bg-black">
-              <CardHeader>
-                <CardTitle>{currentAnalysis.feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">User Story</h3>
-                    <p className="text-muted-foreground whitespace-pre-line">
-                      {currentAnalysis.feature.story}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Generated Feature</h3>
-                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
-                      {currentAnalysis.feature.generatedContent}
-                    </pre>
-                  </div>
-                </div>
-              </CardContent>
+              <div>
+                <h2 className="text-xl font-bold mb-4">Generated Feature</h2>
+                <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                  {currentAnalysis.feature.generatedContent}
+                </pre>
+              </div>
             </Card>
           </div>
         )}
       </>
     );
-  };
-
-  const handleGenerateFeature = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await generateFeatureMutation.mutateAsync();
-    } catch (error) {
-      console.error("Error generating feature:", error);
-    }
   };
 
   return (
