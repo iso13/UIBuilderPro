@@ -399,7 +399,7 @@ export function FeatureList() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-8">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
@@ -429,7 +429,7 @@ export function FeatureList() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                   >
-                    <Card className="bg-black border-gray-800 h-[140px]">
+                    <Card className="bg-transparent border-gray-800 h-[140px]">
                       <div className="p-4 h-full flex flex-col">
                         <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
                         <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
