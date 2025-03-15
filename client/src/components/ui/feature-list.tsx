@@ -328,63 +328,63 @@ So that ${benefit}`;
             </div>
 
             {currentAnalysis && (
-              <div className="space-y-6 mb-8">
-                <Card className="bg-transparent border-gray-800">
-                  <div className="p-6">
-                    <h2 className="text-xl font-bold mb-4">Generated Feature</h2>
-                    <pre className="font-mono bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto whitespace-pre text-gray-300">
-                      {formatFeatureContent(currentAnalysis.feature.title, currentAnalysis.feature.story)}
-                      {'\n\n'}
-                      {currentAnalysis.feature.generatedContent}
-                    </pre>
-                  </div>
-                </Card>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
-                    <ScenarioComplexity
-                      key={index}
-                      name={scenario.name}
-                      complexity={scenario.complexity}
-                      factors={scenario.factors}
-                      explanation={scenario.explanation}
-                    />
-                  ))}
-                </div>
-
-                <Card className="bg-transparent border-gray-800">
-                  <div className="p-6">
-                    <h2 className="text-xl font-bold mb-4">Recommendations</h2>
-                    <ul className="space-y-2">
-                      {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
-                        <li key={index} className="text-muted-foreground">
-                          • {recommendation}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </Card>
-
-                <Card className="bg-transparent border-gray-800">
-                  <div className="p-6">
-                    <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
-                    <div className="mb-4">
-                      <p className="text-muted-foreground">
-                        Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
-                      </p>
+                <div className="mt-4 mb-8">
+                  <Card className="bg-transparent border-gray-800">
+                    <div className="p-4">
+                      <pre className="font-mono bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto whitespace-pre text-gray-300">
+                        {formatFeatureContent(currentAnalysis.feature.title, currentAnalysis.feature.story)}
+                        {'\n\n'}
+                        {currentAnalysis.feature.generatedContent}
+                      </pre>
                     </div>
-                    <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
-                    <ul className="space-y-2">
-                      {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
-                        <li key={index} className="text-muted-foreground">
-                          • {suggestion}
-                        </li>
-                      ))}
-                    </ul>
+                  </Card>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
+                      <ScenarioComplexity
+                        key={index}
+                        name={scenario.name}
+                        complexity={scenario.complexity}
+                        factors={scenario.factors}
+                        explanation={scenario.explanation}
+                      />
+                    ))}
                   </div>
-                </Card>
-              </div>
+
+                  <Card className="bg-transparent border-gray-800 mt-6">
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Recommendations</h2>
+                      <ul className="space-y-2">
+                        {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
+                          <li key={index} className="text-muted-foreground">
+                            • {recommendation}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Card>
+
+                  <Card className="bg-transparent border-gray-800 mt-6">
+                    <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
+                      <div className="mb-4">
+                        <p className="text-muted-foreground">
+                          Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
+                        </p>
+                      </div>
+                      <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
+                      <ul className="space-y-2">
+                        {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
+                          <li key={index} className="text-muted-foreground">
+                            • {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Card>
+                </div>
             )}
+
           </>
         )}
 
