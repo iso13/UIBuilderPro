@@ -429,7 +429,7 @@ export function FeatureList() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                   >
-                    <Card className="bg-transparent border-gray-800 h-[140px]">
+                    <Card className="bg-transparent border-gray-800 h-[160px]">
                       <div className="p-4 h-full flex flex-col">
                         <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
                         <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
