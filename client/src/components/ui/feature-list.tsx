@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Archive, Download, Pencil, Search, Undo } from "lucide-react";
+import { Archive, Download, Pencil, Search, Undo, Home } from "lucide-react";
 import type { Feature, FeatureFilter } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Progress } from "./progress";
@@ -149,11 +149,15 @@ export function FeatureList() {
       await apiRequest("POST", `/api/features/${id}/restore`);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      // Invalidate both active and deleted queries to ensure proper updates
+      await queryClient.invalidateQueries({ queryKey: ["/api/features", "active"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/features", "deleted"] });
       toast({
         title: "Feature restored",
         description: "The feature has been restored from archive",
       });
+      // Switch back to active view after restoring
+      setFilterOption("active");
     },
   });
 
@@ -335,17 +339,7 @@ export function FeatureList() {
 
     return (
       <div className="container mx-auto px-6 py-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            {filterOption === "deleted" ? "Archived Features" : "Feature Generator"}
-          </h1>
-          <p className="text-muted-foreground">
-            {filterOption === "deleted"
-              ? "View and restore archived features"
-              : "Generate Cucumber features using AI"}
-          </p>
-        </div>
-
+        {renderHeader()} {/*Added renderHeader here*/}
         {/* Only show the generation form for active view */}
         {filterOption !== "deleted" && (
           <div className="mb-8 rounded-lg p-8 bg-transparent border border-gray-800">
@@ -490,14 +484,42 @@ export function FeatureList() {
     );
   };
 
+  const renderHeader = () => (
+    <div className="flex justify-between items-center mb-8">
+      <div className="text-center flex-1">
+        <h1 className="text-3xl font-bold mb-2">
+          {filterOption === "deleted" ? "Archived Features" : "Feature Generator"}
+        </h1>
+        <p className="text-muted-foreground">
+          {filterOption === "deleted"
+            ? "View and restore archived features"
+            : "Generate Cucumber features using AI"}
+        </p>
+      </div>
+      {filterOption === "deleted" && (
+        <Button
+          variant="ghost"
+          className="absolute right-8"
+          onClick={() => setFilterOption("active")}
+        >
+          <Home className="h-4 w-4 mr-2" />
+          Back to Home
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      {renderContent()}
-      <EditFeatureDialog
-        feature={selectedFeature}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-      />
+      <div className="container mx-auto px-6 py-6">
+        {renderHeader()}
+        {renderContent()}
+        <EditFeatureDialog
+          feature={selectedFeature}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+        />
+      </div>
     </div>
   );
 }
