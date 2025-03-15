@@ -213,46 +213,49 @@ export function FeatureList() {
     return (
       <>
         <div className="mb-8 rounded-lg p-8 bg-transparent border border-gray-800">
-          <h2 className="text-xl font-bold mb-6">Generate New Feature</h2>
+          <h2 className="text-2xl font-bold mb-6">Generate New Feature</h2>
           <form onSubmit={handleGenerateFeature} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Feature Title</Label>
+              <Label htmlFor="title" className="text-base">Feature Title</Label>
               <Input
                 id="title"
                 placeholder="Enter feature title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-background w-full"
+                className="bg-background w-full h-12 text-base"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="story">Feature Story</Label>
+              <Label htmlFor="story" className="text-base">Feature Story</Label>
               <Textarea
                 id="story"
                 placeholder="Enter feature story"
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
-                className="bg-background min-h-[120px] w-full"
+                className="bg-background min-h-[150px] w-full text-base"
                 required
               />
             </div>
-            <div className="flex gap-4">
-              <Select value={scenarioCount} onValueChange={setScenarioCount}>
-                <SelectTrigger className="w-[180px] bg-background">
-                  <SelectValue placeholder="Number of Scenarios" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} Scenario{num > 1 ? "s" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex gap-4 items-center">
+              <div className="w-64">
+                <Label htmlFor="scenarioCount" className="text-base mb-2 block">Number of Scenarios</Label>
+                <Select value={scenarioCount} onValueChange={setScenarioCount}>
+                  <SelectTrigger className="w-full bg-background h-12">
+                    <SelectValue placeholder="Number of Scenarios" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num} Scenario{num > 1 ? "s" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 type="submit"
-                className="bg-blue-500 text-white px-8"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-8 h-12 mt-8"
                 disabled={generateFeatureMutation.isPending}
               >
                 {generateFeatureMutation.isPending ? "Generating..." : "Generate Feature"}
