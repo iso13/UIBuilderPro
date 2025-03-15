@@ -8,21 +8,28 @@ export default function Analytics() {
     queryKey: ["/api/analytics"],
   });
 
+  // Show loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingSpinner />
+      <div className="container mx-auto px-4 py-8 mt-16">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <LoadingSpinner />
+          <p className="mt-4 text-muted-foreground">Loading analytics data...</p>
+        </div>
       </div>
     );
   }
 
+  // Show error or no data state
   if (error || !analytics) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <h1 className="text-2xl font-bold mb-2">Analytics Dashboard</h1>
-        <p className="text-muted-foreground">
-          {error ? "Error loading analytics" : "No analytics data available"}
-        </p>
+      <div className="container mx-auto px-4 py-8 mt-16">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <h1 className="text-2xl font-bold mb-2">Analytics Dashboard</h1>
+          <p className="text-muted-foreground">
+            {error ? "Error loading analytics data" : "No analytics data available yet"}
+          </p>
+        </div>
       </div>
     );
   }
@@ -43,7 +50,7 @@ export default function Analytics() {
     (totalFeatures || 1);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 mt-16">
       <div className="flex flex-col gap-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold">Analytics Dashboard</h1>
