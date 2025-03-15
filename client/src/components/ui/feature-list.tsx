@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Copy, Trash2, Edit, Search, Filter, SlidersHorizontal, Laptop } from "lucide-react";
+import { Archive, Download, Pencil, Search, Filter, SlidersHorizontal, Laptop } from "lucide-react";
 import type { Feature } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Progress } from "./progress";
@@ -152,6 +152,31 @@ export function FeatureList() {
       toast({
         title: "Error",
         description: "Failed to copy feature",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Export Feature Mutation
+  const exportFeatureMutation = useMutation({
+    mutationFn: async (featureId: number) => {
+      const response = await apiRequest("POST", "/api/features/export-multiple", {
+        featureIds: [featureId],
+      }, { responseType: 'blob' });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'feature.zip');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to export feature",
         variant: "destructive",
       });
     },
@@ -411,19 +436,10 @@ export function FeatureList() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 hover:bg-white/10"
-                              onClick={() => copyFeatureMutation.mutate(feature)}
-                              disabled={copyFeatureMutation.isPending}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 hover:bg-white/10"
                               onClick={() => deleteMutation.mutate(feature.id)}
                               disabled={deleteMutation.isPending}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Archive className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -431,7 +447,16 @@ export function FeatureList() {
                               className="h-8 w-8 hover:bg-white/10"
                               onClick={() => navigate(`/edit/${feature.id}`)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-white/10"
+                              onClick={() => exportFeatureMutation.mutate(feature.id)}
+                              disabled={exportFeatureMutation.isPending}
+                            >
+                              <Download className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
