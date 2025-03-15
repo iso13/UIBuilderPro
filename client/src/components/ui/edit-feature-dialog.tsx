@@ -18,6 +18,7 @@ interface EditFeatureDialogProps {
 export function EditFeatureDialog({ feature, open, onOpenChange }: EditFeatureDialogProps) {
   const [title, setTitle] = useState(feature?.title || "");
   const [story, setStory] = useState(feature?.story || "");
+  const [generatedContent, setGeneratedContent] = useState(feature?.generatedContent || "");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -26,18 +27,21 @@ export function EditFeatureDialog({ feature, open, onOpenChange }: EditFeatureDi
     if (feature) {
       setTitle(feature.title);
       setStory(feature.story);
+      setGeneratedContent(feature.generatedContent || "");
     }
   }, [feature]);
 
   const updateFeatureMutation = useMutation({
     mutationFn: async () => {
       if (!feature) return;
-      if (!title.trim()) throw new Error("Feature name is required");
-      if (!story.trim()) throw new Error("Description is required");
+      if (!title.trim()) throw new Error("Feature title is required");
+      if (!story.trim()) throw new Error("Feature story is required");
 
       return apiRequest("PUT", `/api/features/${feature.id}`, {
         title,
         story,
+        generatedContent,
+        manuallyEdited: true
       });
     },
     onSuccess: async () => {
@@ -64,30 +68,41 @@ export function EditFeatureDialog({ feature, open, onOpenChange }: EditFeatureDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-black border-gray-800">
+      <DialogContent className="sm:max-w-[725px] bg-black border-gray-800">
         <DialogHeader>
           <DialogTitle className="text-xl">Edit Feature</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">Feature Name</Label>
+            <Label htmlFor="title" className="text-sm font-medium">Feature Title</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter feature name"
+              placeholder="Enter feature title"
               className="bg-background focus:ring-0 border-gray-800"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+            <Label htmlFor="story" className="text-sm font-medium">User Story</Label>
             <Textarea
-              id="description"
+              id="story"
               value={story}
               onChange={(e) => setStory(e.target.value)}
-              placeholder="Describe what this feature does"
+              placeholder="Enter user story"
               className="bg-background focus:ring-0 border-gray-800 min-h-[100px]"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="generatedContent" className="text-sm font-medium">Feature Content</Label>
+            <Textarea
+              id="generatedContent"
+              value={generatedContent}
+              onChange={(e) => setGeneratedContent(e.target.value)}
+              placeholder="Enter feature content"
+              className="bg-background focus:ring-0 border-gray-800 min-h-[300px] font-mono"
               required
             />
           </div>
