@@ -88,9 +88,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const filter = (req.query.filter as FeatureFilter) || "active";
-      console.log("Fetching features with filter:", filter);
+      console.log("Fetching features with filter:", filter, "for userId:", userId);
 
       const features = await storage.getFeatures(userId, filter);
+      console.log(`Returning ${features.length} features for filter ${filter}`);
       return res.json(features);
     } catch (error: any) {
       console.error("Error fetching features:", error);

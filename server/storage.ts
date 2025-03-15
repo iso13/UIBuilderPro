@@ -124,6 +124,7 @@ export class PostgresStorage {
 
   async getFeatures(userId: number, filter: FeatureFilter = "active"): Promise<Feature[]> {
     try {
+      console.log(`Getting features for userId: ${userId} with filter: ${filter}`);
       let conditions = [eq(features.userId, userId)];
 
       if (filter === "active") {
@@ -131,6 +132,7 @@ export class PostgresStorage {
       } else if (filter === "deleted") {
         conditions.push(eq(features.deleted, true));
       }
+      // filter === "all" doesn't need additional conditions
 
       const result = await db
         .select()
@@ -138,7 +140,8 @@ export class PostgresStorage {
         .where(and(...conditions))
         .orderBy(features.createdAt);
 
-      console.log(`Retrieved ${result?.length || 0} features with filter: ${filter}`);
+      console.log(`Retrieved ${result?.length || 0} features for filter: ${filter}`);
+      console.log('Features:', result);
       return result || [];
     } catch (error) {
       console.error("Error in getFeatures:", error);
