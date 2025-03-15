@@ -6,6 +6,8 @@ import NotFound from "./pages/not-found";
 import { Home } from "./pages/home";
 import { ProtectedRoute } from "./lib/protected-route";
 import { queryClient } from "./lib/queryClient";
+import { Header } from "./components/header";
+import { ThemeProvider } from "./components/theme-provider";
 
 // Lazy load pages
 import { lazy, Suspense } from "react";
@@ -23,71 +25,81 @@ const Loading = () => (
 
 function UnauthenticatedRoutes() {
   return (
-    <Switch>
-      <Route path="/login">
-        <Suspense fallback={<Loading />}>
-          <Login />
-        </Suspense>
-      </Route>
-      <Route path="/signup">
-        <Suspense fallback={<Loading />}>
-          <Signup />
-        </Suspense>
-      </Route>
-      <Route path="*">
-        <Suspense fallback={<Loading />}>
-          <Login />
-        </Suspense>
-      </Route>
-    </Switch>
+    <>
+      <Header />
+      <Switch>
+        <Route path="/login">
+          <Suspense fallback={<Loading />}>
+            <Login />
+          </Suspense>
+        </Route>
+        <Route path="/signup">
+          <Suspense fallback={<Loading />}>
+            <Signup />
+          </Suspense>
+        </Route>
+        <Route path="*">
+          <Suspense fallback={<Loading />}>
+            <Login />
+          </Suspense>
+        </Route>
+      </Switch>
+    </>
   );
 }
 
 function AuthenticatedRoutes() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/new">
-        <Suspense fallback={<Loading />}>
-          <New />
-        </Suspense>
-      </Route>
-      <Route path="/analytics">
-        <Suspense fallback={<Loading />}>
-          <Analytics />
-        </Suspense>
-      </Route>
-      <Route path="/edit/:id">
-        {(params) => (
-          <Suspense fallback={<Loading />}>
-            <Edit id={params.id} />
-          </Suspense>
-        )}
-      </Route>
-      <Route path="*" component={NotFound} />
-    </Switch>
+    <>
+      <Header />
+      <main className="pt-16"> {/* Add padding top to account for fixed header */}
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/new">
+            <Suspense fallback={<Loading />}>
+              <New />
+            </Suspense>
+          </Route>
+          <Route path="/analytics">
+            <Suspense fallback={<Loading />}>
+              <Analytics />
+            </Suspense>
+          </Route>
+          <Route path="/edit/:id">
+            {(params) => (
+              <Suspense fallback={<Loading />}>
+                <Edit id={params.id} />
+              </Suspense>
+            )}
+          </Route>
+          <Route path="*" component={NotFound} />
+        </Switch>
+      </main>
+    </>
   );
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <div className="min-h-screen bg-gray-50">
-            <Switch>
-              <Route path="/login">
-                <UnauthenticatedRoutes />
-              </Route>
-              <Route path="/signup">
-                <UnauthenticatedRoutes />
-              </Route>
-              <ProtectedRoute path="*" component={AuthenticatedRoutes} />
-            </Switch>
-          </div>
-        </Router>
-        <Toaster position="top-right" />
-      </AuthProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <AuthProvider>
+          <Router>
+            <div className="min-h-screen bg-background">
+              <Switch>
+                <Route path="/login">
+                  <UnauthenticatedRoutes />
+                </Route>
+                <Route path="/signup">
+                  <UnauthenticatedRoutes />
+                </Route>
+                <ProtectedRoute path="*" component={AuthenticatedRoutes} />
+              </Switch>
+            </div>
+          </Router>
+          <Toaster position="top-right" />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
