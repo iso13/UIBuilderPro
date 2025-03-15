@@ -17,15 +17,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const filter = (req.query.filter as FeatureFilter) || "active";
-      console.log("Fetching features with filter:", filter); // Debug log
+      console.log("Fetching features with filter:", filter);
 
-      // Directly use getAllFeatures from storage
       let features = await storage.getAllFeatures(filter === "all");
-
-      // Ensure we always return an array
       features = Array.isArray(features) ? features : [];
 
-      console.log("Features to return:", features); // Debug log
       return res.json(features);
     } catch (error: any) {
       console.error("Error fetching features:", error);
@@ -40,13 +36,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const feature = await storage.getFeature(req.params.id);
+      const featureId = parseInt(req.params.id);
+      const feature = await storage.getFeature(featureId);
 
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
 
-      // Log feature view
       await storage.logAnalyticsEvent({
         userId,
         eventType: "feature_view",
@@ -136,7 +132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { title, story, scenarios } = req.body;
 
-      const feature = await storage.updateFeature(req.params.id, {
+      const featureId = parseInt(req.params.id); //Convert to number
+      const feature = await storage.updateFeature(featureId, {
         title,
         story,
         scenarios,
@@ -155,7 +152,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      await storage.softDeleteFeature(req.params.id);
+      const featureId = parseInt(req.params.id); //Convert to number
+      await storage.softDeleteFeature(featureId);
       res.json({ message: "Feature moved to trash" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -169,7 +167,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      await storage.restoreFeature(req.params.id);
+      const featureId = parseInt(req.params.id); //Convert to number
+      await storage.restoreFeature(featureId);
       res.json({ message: "Feature restored" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -184,9 +183,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const analyticsData = await storage.getAnalytics(Number(userId));
+      console.log("Fetching analytics for user:", userId); 
+      const analyticsData = await storage.getAnalytics(userId);
+      console.log("Analytics data:", analyticsData); 
+
       res.json(analyticsData);
     } catch (error: any) {
+      console.error("Error fetching analytics:", error);
       res.status(500).json({ message: error.message });
     }
   });
@@ -262,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const features = await Promise.all(
-        featureIds.map(id => storage.getFeature(id))
+        featureIds.map(id => storage.getFeature(parseInt(id))) //Convert to number
       );
 
       // Filter out any null results
@@ -277,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       validFeatures.forEach(feature => {
         const filename = `${feature.title.toLowerCase().replace(/\s+/g, '_')}.doc`;
-        zip.file(filename, feature.generatedContent);
+        zip.file(filename, feature.generatedContent || ""); // Handle potential null generatedContent
       });
 
       const zipContent = await zip.generateAsync({ type: "nodebuffer" });

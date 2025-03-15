@@ -30,6 +30,14 @@ export interface IStorage {
   // Analytics
   trackEvent(event: Analytics): Promise<Analytics>;
   getAnalytics(userId?: number): Promise<Analytics[]>;
+  logAnalyticsEvent(event: {
+    userId: number;
+    eventType: string;
+    featureId: number;
+    successful: boolean;
+    errorMessage: string | null;
+    scenarioCount: number | null;
+  }): Promise<Analytics>;
 }
 
 type FeatureFilter = "active" | "deleted" | "all";
@@ -135,14 +143,47 @@ export class PostgresStorage implements IStorage {
   }
 
   async getAnalytics(userId?: number): Promise<Analytics[]> {
-    if (userId) {
-      return await db.select().from(analytics).where(eq(analytics.userId, userId)).orderBy(analytics.createdAt);
+    console.log("Getting analytics for user:", userId);
+    try {
+      if (userId) {
+        const results = await db
+          .select()
+          .from(analytics)
+          .where(eq(analytics.userId, userId))
+          .orderBy(analytics.createdAt);
+        return results;
+      }
+      const results = await db
+        .select()
+        .from(analytics)
+        .orderBy(analytics.createdAt);
+      return results;
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      return [];
     }
-    return await db.select().from(analytics).orderBy(analytics.createdAt);
   }
 
-  async logAnalyticsEvent(event: { userId: number; eventType: string; featureId: number; successful: boolean; errorMessage: string | null; scenarioCount: number | null; }): Promise<Analytics> {
-    return await this.trackEvent(event);
+  async logAnalyticsEvent(event: {
+    userId: number;
+    eventType: string;
+    featureId: number;
+    successful: boolean;
+    errorMessage: string | null;
+    scenarioCount: number | null;
+  }): Promise<Analytics> {
+    const analyticsEvent = {
+      userId: event.userId,
+      eventType: event.eventType,
+      featureId: event.featureId,
+      successful: event.successful,
+      errorMessage: event.errorMessage,
+      scenarioCount: event.scenarioCount,
+      createdAt: new Date(),
+    };
+
+    const [analytic] = await db.insert(analytics).values(analyticsEvent).returning();
+    return analytic;
   }
 
   async getFeatures(userId: number, filter: FeatureFilter = "all"): Promise<Feature[]> {

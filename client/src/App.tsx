@@ -13,6 +13,7 @@ const Login = lazy(() => import("./pages/login"));
 const Signup = lazy(() => import("./pages/signup"));
 const New = lazy(() => import("./pages/new"));
 const Edit = lazy(() => import("./pages/edit"));
+const Analytics = lazy(() => import("./pages/analytics"));
 
 const Loading = () => (
   <div className="flex justify-center items-center h-screen">
@@ -49,6 +50,11 @@ function AuthenticatedRoutes() {
       <Route path="/new">
         <Suspense fallback={<Loading />}>
           <New />
+        </Suspense>
+      </Route>
+      <Route path="/analytics">
+        <Suspense fallback={<Loading />}>
+          <Analytics />
         </Suspense>
       </Route>
       <Route path="/edit/:id">
