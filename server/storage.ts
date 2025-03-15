@@ -125,7 +125,7 @@ export class PostgresStorage {
   async getFeatures(userId: number, filter: FeatureFilter = "active"): Promise<Feature[]> {
     try {
       console.log(`Getting features for userId: ${userId} with filter: ${filter}`);
-      let conditions = [eq(features.userId, userId)];
+      let conditions = [];
 
       if (filter === "active") {
         conditions.push(eq(features.deleted, false));
@@ -137,11 +137,10 @@ export class PostgresStorage {
       const result = await db
         .select()
         .from(features)
-        .where(and(...conditions))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(features.createdAt);
 
       console.log(`Retrieved ${result?.length || 0} features for filter: ${filter}`);
-      console.log('Features:', result);
       return result || [];
     } catch (error) {
       console.error("Error in getFeatures:", error);
