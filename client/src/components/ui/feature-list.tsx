@@ -244,6 +244,20 @@ export function FeatureList() {
     }
   };
 
+  // Format the feature content in the desired structure
+  const formatFeatureContent = (title: string, story: string) => {
+    const storyLines = story.split('\n');
+    const userRole = storyLines.find(line => line.toLowerCase().startsWith('as'))?.replace('As', '')?.trim() || '';
+    const action = storyLines.find(line => line.toLowerCase().includes('i want'))?.replace(/^.*?want/, '')?.trim() || '';
+    const benefit = storyLines.find(line => line.toLowerCase().includes('so that'))?.replace(/^.*?that/, '')?.trim() || '';
+
+    return `@orderTrackingSystem
+Feature: ${title}
+As ${userRole}
+I want ${action}
+So that ${benefit}`;
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -260,61 +274,120 @@ export function FeatureList() {
 
     return (
       <>
-        {/* Only show the generation form for active view */}
         {filterOption !== "deleted" && (
-          <div className="mb-8 rounded-lg p-8 bg-transparent border border-gray-800">
-            <h2 className="text-2xl font-bold mb-6">Generate New Feature</h2>
-            <form onSubmit={handleGenerateFeature} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-base">Feature Title</Label>
-                <Input
-                  id="title"
-                  placeholder="Enter feature title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="bg-background w-full h-12 text-base"
-                  required
-                />
+          <>
+            <div className="mb-8 rounded-lg p-8 bg-transparent border border-gray-800">
+              <h2 className="text-2xl font-bold mb-6">Generate New Feature</h2>
+              <form onSubmit={handleGenerateFeature} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="text-base">Feature Title</Label>
+                  <Input
+                    id="title"
+                    placeholder="Enter feature title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="bg-background w-full h-12 text-base"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="story" className="text-base">Feature Story</Label>
+                  <Textarea
+                    id="story"
+                    placeholder="Enter feature story"
+                    value={story}
+                    onChange={(e) => setStory(e.target.value)}
+                    className="bg-background min-h-[150px] w-full text-base"
+                    required
+                  />
+                </div>
+                <div className="w-64">
+                  <Label htmlFor="scenarioCount" className="text-base mb-2 block">Number of Scenarios</Label>
+                  <Select value={scenarioCount} onValueChange={setScenarioCount}>
+                    <SelectTrigger className="w-full bg-background h-12">
+                      <SelectValue placeholder="Number of Scenarios" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <SelectItem key={num} value={num.toString()}>
+                          {num} Scenario{num > 1 ? "s" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 flex items-center justify-center gap-2 mt-6"
+                  disabled={generateFeatureMutation.isPending}
+                >
+                  <Rocket className="h-4 w-4" />
+                  {generateFeatureMutation.isPending ? "Generating..." : "Generate Feature"}
+                </Button>
+              </form>
+            </div>
+
+            {currentAnalysis && (
+              <div className="space-y-6 mb-8">
+                <Card className="bg-transparent border-gray-800">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Generated Feature</h2>
+                    <pre className="font-mono bg-[#1e1e1e] p-4 rounded-lg overflow-x-auto whitespace-pre text-gray-300">
+                      {formatFeatureContent(currentAnalysis.feature.title, currentAnalysis.feature.story)}
+                      {'\n\n'}
+                      {currentAnalysis.feature.generatedContent}
+                    </pre>
+                  </div>
+                </Card>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
+                    <ScenarioComplexity
+                      key={index}
+                      name={scenario.name}
+                      complexity={scenario.complexity}
+                      factors={scenario.factors}
+                      explanation={scenario.explanation}
+                    />
+                  ))}
+                </div>
+
+                <Card className="bg-transparent border-gray-800">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Recommendations</h2>
+                    <ul className="space-y-2">
+                      {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
+                        <li key={index} className="text-muted-foreground">
+                          • {recommendation}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
+
+                <Card className="bg-transparent border-gray-800">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
+                    <div className="mb-4">
+                      <p className="text-muted-foreground">
+                        Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
+                      </p>
+                    </div>
+                    <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
+                    <ul className="space-y-2">
+                      {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
+                        <li key={index} className="text-muted-foreground">
+                          • {suggestion}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="story" className="text-base">Feature Story</Label>
-                <Textarea
-                  id="story"
-                  placeholder="Enter feature story"
-                  value={story}
-                  onChange={(e) => setStory(e.target.value)}
-                  className="bg-background min-h-[150px] w-full text-base"
-                  required
-                />
-              </div>
-              <div className="w-64">
-                <Label htmlFor="scenarioCount" className="text-base mb-2 block">Number of Scenarios</Label>
-                <Select value={scenarioCount} onValueChange={setScenarioCount}>
-                  <SelectTrigger className="w-full bg-background h-12">
-                    <SelectValue placeholder="Number of Scenarios" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5].map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} Scenario{num > 1 ? "s" : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 flex items-center justify-center gap-2 mt-6"
-                disabled={generateFeatureMutation.isPending}
-              >
-                <Rocket className="h-4 w-4" />
-                {generateFeatureMutation.isPending ? "Generating..." : "Generate Feature"}
-              </Button>
-            </form>
-          </div>
+            )}
+          </>
         )}
 
-        {/* Search and filter controls */}
         <div className="flex justify-between items-start mb-6">
           <div>
             <h2 className="text-2xl font-bold">
@@ -357,7 +430,6 @@ export function FeatureList() {
           </div>
         </div>
 
-        {/* Feature list */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
@@ -399,7 +471,6 @@ export function FeatureList() {
           )}
         </div>
 
-        {/* Feature Generation Status */}
         {generationStep !== null && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-background rounded-lg p-6 max-w-md w-full mx-4">
@@ -412,67 +483,17 @@ export function FeatureList() {
           </div>
         )}
 
-        {/* Generated Feature Content */}
-        {currentAnalysis && (
-          <div className="space-y-6">
-            <Card className="bg-transparent border-gray-800">
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-4">Generated Feature</h2>
-                <pre className="bg-muted p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
-                  {currentAnalysis.feature.generatedContent}
-                </pre>
-              </div>
-            </Card>
 
-            {/* Complexity Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {currentAnalysis.complexity.scenarios.map((scenario: ScenarioData, index: number) => (
-                <ScenarioComplexity
-                  key={index}
-                  name={scenario.name}
-                  complexity={scenario.complexity}
-                  factors={scenario.factors}
-                  explanation={scenario.explanation}
-                />
-              ))}
-            </div>
-
-            {/* Recommendations */}
-            <Card className="bg-transparent border-gray-800">
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-4">Recommendations</h2>
-                <ul className="space-y-2">
-                  {currentAnalysis.complexity.recommendations.map((recommendation: string, index: number) => (
-                    <li key={index} className="text-muted-foreground">
-                      • {recommendation}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Card>
-
-            {/* Quality Analysis */}
-            <Card className="bg-transparent border-gray-800">
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-4">Quality Analysis</h2>
-                <div className="mb-4">
-                  <p className="text-muted-foreground">
-                    Quality Score: <span className="text-primary">{currentAnalysis.analysis.quality_score}%</span>
-                  </p>
-                </div>
-                <h3 className="font-semibold mb-2">Suggestions for Improvement</h3>
-                <ul className="space-y-2">
-                  {currentAnalysis.analysis.suggestions.map((suggestion: string, index: number) => (
-                    <li key={index} className="text-muted-foreground">
-                      • {suggestion}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Card>
-          </div>
-        )}
-
+        <EditFeatureDialog
+          feature={selectedFeature}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+        />
+        <FeatureViewDialog
+          feature={selectedFeature}
+          open={viewDialogOpen}
+          onOpenChange={setViewDialogOpen}
+        />
       </>
     );
   };
@@ -503,16 +524,6 @@ export function FeatureList() {
           )}
         </div>
         {renderContent()}
-        <EditFeatureDialog
-          feature={selectedFeature}
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-        />
-        <FeatureViewDialog
-          feature={selectedFeature}
-          open={viewDialogOpen}
-          onOpenChange={setViewDialogOpen}
-        />
       </div>
     </div>
   );
