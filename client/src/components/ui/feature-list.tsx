@@ -68,7 +68,7 @@ export function FeatureList() {
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features"],
     staleTime: 0,
-    cacheTime: 0,
+    gcTime: 0, // Changed from cacheTime to gcTime as per TanStack Query v5
     refetchInterval: 1000, // Poll every second while the component is mounted
   });
 
@@ -164,7 +164,7 @@ export function FeatureList() {
     mutationFn: async (featureId: number) => {
       const response = await apiRequest("POST", "/api/features/export-multiple", {
         featureIds: [featureId],
-      }, { responseType: 'blob' });
+      }, undefined, { responseType: 'blob' });
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response]));
@@ -212,9 +212,9 @@ export function FeatureList() {
 
     return (
       <>
-        <div className="mb-8 rounded-lg p-6 bg-black">
-          <h2 className="text-xl font-bold mb-4">Generate New Feature</h2>
-          <form onSubmit={handleGenerateFeature} className="space-y-4">
+        <div className="mb-8 rounded-lg p-8 bg-transparent border border-gray-800">
+          <h2 className="text-xl font-bold mb-6">Generate New Feature</h2>
+          <form onSubmit={handleGenerateFeature} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">Feature Title</Label>
               <Input
@@ -222,7 +222,7 @@ export function FeatureList() {
                 placeholder="Enter feature title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="bg-background"
+                className="bg-background w-full"
                 required
               />
             </div>
@@ -233,7 +233,7 @@ export function FeatureList() {
                 placeholder="Enter feature story"
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
-                className="bg-background min-h-[100px]"
+                className="bg-background min-h-[120px] w-full"
                 required
               />
             </div>
@@ -252,7 +252,7 @@ export function FeatureList() {
               </Select>
               <Button
                 type="submit"
-                className="bg-blue-500 text-white"
+                className="bg-blue-500 text-white px-8"
                 disabled={generateFeatureMutation.isPending}
               >
                 {generateFeatureMutation.isPending ? "Generating..." : "Generate Feature"}
@@ -399,7 +399,7 @@ export function FeatureList() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none"> {/* Adjusted for wider cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
@@ -429,7 +429,7 @@ export function FeatureList() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                   >
-                    <Card className="bg-transparent border-gray-800 h-[180px] w-full"> {/* Made cards full width */}
+                    <Card className="bg-transparent border-gray-800 h-[180px] w-full">
                       <div className="p-4 h-full flex flex-col">
                         <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
                         <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
@@ -480,7 +480,7 @@ export function FeatureList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="w-full px-6 py-6"> {/* Changed from container max-w-[1920px] to be fully fluid */}
+      <div className="w-full px-6 py-6">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Feature Generator</h1>
           <p className="text-muted-foreground">Generate Cucumber features using AI</p>
