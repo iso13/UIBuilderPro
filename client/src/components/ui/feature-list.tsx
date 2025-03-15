@@ -399,7 +399,7 @@ export function FeatureList() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-8">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
@@ -431,8 +431,12 @@ export function FeatureList() {
                   >
                     <Card className="bg-black hover:bg-black/70 transition-colors h-full">
                       <div className="p-4">
-                        <div className="flex justify-between items-start gap-2">
-                          <h3 className="text-lg font-semibold mb-2 line-clamp-2">{feature.title}</h3>
+                        <h3 className="text-lg font-semibold mb-2 line-clamp-2">{feature.title}</h3>
+                        <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">{feature.story}</p>
+                        <div className="flex justify-between items-center">
+                          <div className="text-xs text-muted-foreground">
+                            Created: {new Date(feature.createdAt).toLocaleDateString()}
+                          </div>
                           <div className="flex gap-1 flex-shrink-0">
                             <Button
                               variant="ghost"
@@ -464,10 +468,6 @@ export function FeatureList() {
                               <Download className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div>
-                        <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">{feature.story}</p>
-                        <div className="text-xs text-muted-foreground">
-                          Created: {new Date(feature.createdAt).toLocaleDateString()}
                         </div>
                       </div>
                     </Card>
