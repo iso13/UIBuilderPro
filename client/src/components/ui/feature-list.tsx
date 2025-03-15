@@ -67,7 +67,6 @@ export function FeatureList() {
     console.log('Changing filter to:', value);
     setFilterOption(value as FeatureFilter);
     // Invalidate queries to force a refresh
-    await queryClient.invalidateQueries({ queryKey: ["/api/features", filterOption] });
     await queryClient.invalidateQueries({ queryKey: ["/api/features", value] });
     await queryClient.refetchQueries({ queryKey: ["/api/features", value] });
   };
