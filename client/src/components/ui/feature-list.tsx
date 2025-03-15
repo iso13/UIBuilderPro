@@ -435,7 +435,7 @@ export function FeatureList() {
                         <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">{feature.story}</p>
                         <div className="flex justify-between items-center">
                           <div className="text-xs text-muted-foreground">
-                            Created: {new Date(feature.createdAt).toLocaleDateString()}
+                            {new Date(feature.createdAt).toLocaleDateString()}
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             <Button
