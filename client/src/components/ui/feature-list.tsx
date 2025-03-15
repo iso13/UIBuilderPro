@@ -14,42 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useLocation } from "wouter";
 import { Archive, Download, Pencil, Search, Undo, Home } from "lucide-react";
 import type { Feature, FeatureFilter } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { Progress } from "./progress";
-import { ScenarioComplexity } from "./scenario-complexity";
 import { FeatureGenerationLoader } from "./feature-generation-loader";
 import { EditFeatureDialog } from "./edit-feature-dialog";
 
-interface FeatureResponse {
-  feature: Feature;
-  complexity: {
-    overallComplexity: number;
-    scenarios: {
-      name: string;
-      complexity: number;
-      factors: {
-        stepCount: number;
-        dataDependencies: number;
-        conditionalLogic: number;
-        technicalDifficulty: number;
-      };
-      explanation: string;
-    }[];
-    recommendations: string[];
-  };
-  analysis: {
-    quality_score: number;
-    suggestions: string[];
-    improved_title?: string;
-  };
-}
-
 export function FeatureList() {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
-  const [, navigate] = useLocation();
   const [title, setTitle] = useState("");
   const [story, setStory] = useState("");
   const [scenarioCount, setScenarioCount] = useState("1");
@@ -62,13 +34,10 @@ export function FeatureList() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [filterOption, setFilterOption] = useState<FeatureFilter>("active");
 
-  // Features Query with archive filter
+  // Features Query
   const { data: features = [], isLoading } = useQuery<Feature[]>({
     queryKey: ["/api/features", filterOption],
     queryFn: () => apiRequest("GET", `/api/features?filter=${filterOption}`),
-    staleTime: 0,
-    gcTime: 0,
-    refetchInterval: 1000,
   });
 
   // Generate Feature Mutation
@@ -122,7 +91,7 @@ export function FeatureList() {
       await apiRequest("DELETE", `/api/features/${id}`);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/features", filterOption] });
       toast({
         title: "Feature archived",
         description: "The feature has been moved to archive",
@@ -136,12 +105,14 @@ export function FeatureList() {
       await apiRequest("POST", `/api/features/${id}/restore`);
     },
     onSuccess: async () => {
+      // Invalidate both active and deleted queries
       await queryClient.invalidateQueries({ queryKey: ["/api/features", "active"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/features", "deleted"] });
       toast({
         title: "Feature restored",
         description: "The feature has been restored from archive",
       });
+      // Switch back to active view after restore
       setFilterOption("active");
     },
   });
@@ -153,7 +124,6 @@ export function FeatureList() {
         featureIds: [featureId],
       }, undefined, { responseType: 'blob' });
 
-      // Create download link
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
@@ -171,14 +141,107 @@ export function FeatureList() {
     },
   });
 
-  const handleGenerateFeature = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await generateFeatureMutation.mutateAsync();
-    } catch (error) {
-      console.error("Error generating feature:", error);
-    }
-  };
+  const renderFeatureCard = (feature: Feature) => (
+    <Card className="bg-transparent border-gray-800 h-[180px] w-full">
+      <div className="p-4 h-full flex flex-col">
+        <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
+        <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
+        <div className="flex justify-between items-center pt-4">
+          <div className="text-xs text-gray-600">
+            {new Date(feature.createdAt).toLocaleDateString()}
+          </div>
+          <div className="flex gap-1">
+            {feature.deleted ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => restoreMutation.mutate(feature.id)}
+                disabled={restoreMutation.isPending}
+              >
+                <Undo className="h-3 w-3" />
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => deleteMutation.mutate(feature.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Archive className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    setSelectedFeature(feature);
+                    setEditDialogOpen(true);
+                  }}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => exportFeatureMutation.mutate(feature.id)}
+                  disabled={exportFeatureMutation.isPending}
+                >
+                  <Download className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const renderFeatureList = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none">
+      {!features || features.length === 0 ? (
+        <div className="col-span-full text-center py-10">
+          <p className="text-muted-foreground">
+            {filterOption === "deleted"
+              ? "No archived features found"
+              : "No active features found. Generate your first feature!"}
+          </p>
+        </div>
+      ) : (
+        <AnimatePresence>
+          {features
+            .filter(feature =>
+              feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              feature.story.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .sort((a, b) => {
+              switch (sortOption) {
+                case 'oldest':
+                  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                case 'alphabetical':
+                  return a.title.localeCompare(b.title);
+                default: // newest
+                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              }
+            })
+            .map((feature) => (
+              <motion.div
+                key={feature.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                layout
+              >
+                {renderFeatureCard(feature)}
+              </motion.div>
+            ))}
+        </AnimatePresence>
+      )}
+    </div>
+  );
 
   const renderContent = () => {
     if (isLoading) {
@@ -295,103 +358,7 @@ export function FeatureList() {
         </div>
 
         {/* Feature list */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 max-w-none">
-          {!features || features.length === 0 ? (
-            <div className="col-span-full text-center py-10">
-              <p className="text-muted-foreground">
-                {filterOption === "deleted"
-                  ? "No archived features found"
-                  : filterOption === "active"
-                  ? "No active features found. Generate your first feature!"
-                  : "No features found"}
-              </p>
-            </div>
-          ) : (
-            <AnimatePresence>
-              {features
-                .filter(feature =>
-                  feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  feature.story.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-                .sort((a, b) => {
-                  switch (sortOption) {
-                    case 'oldest':
-                      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                    case 'alphabetical':
-                      return a.title.localeCompare(b.title);
-                    default: // newest
-                      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                  }
-                })
-                .map((feature) => (
-                  <motion.div
-                    key={feature.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    layout
-                  >
-                    <Card className="bg-transparent border-gray-800 h-[180px] w-full">
-                      <div className="p-4 h-full flex flex-col">
-                        <h3 className="text-base text-gray-200 mb-2">{feature.title}</h3>
-                        <p className="text-sm text-gray-500 mb-auto line-clamp-3">{feature.story}</p>
-                        <div className="flex justify-between items-center pt-4">
-                          <div className="text-xs text-gray-600">
-                            {new Date(feature.createdAt).toLocaleDateString()}
-                          </div>
-                          <div className="flex gap-1">
-                            {filterOption === "deleted" ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => restoreMutation.mutate(feature.id)}
-                                disabled={restoreMutation.isPending}
-                              >
-                                <Undo className="h-3 w-3" />
-                              </Button>
-                            ) : (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => deleteMutation.mutate(feature.id)}
-                                  disabled={deleteMutation.isPending}
-                                >
-                                  <Archive className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => {
-                                    setSelectedFeature(feature);
-                                    setEditDialogOpen(true);
-                                  }}
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => exportFeatureMutation.mutate(feature.id)}
-                                  disabled={exportFeatureMutation.isPending}
-                                >
-                                  <Download className="h-3 w-3" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                ))}
-            </AnimatePresence>
-          )}
-        </div>
+        {renderFeatureList()}
 
         {/* Feature Generation Status */}
         {generationStep !== null && (
@@ -436,6 +403,15 @@ export function FeatureList() {
     );
   };
 
+  const handleGenerateFeature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await generateFeatureMutation.mutateAsync();
+    } catch (error) {
+      console.error("Error generating feature:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-6 py-6">
@@ -470,4 +446,28 @@ export function FeatureList() {
       </div>
     </div>
   );
+}
+
+interface FeatureResponse {
+  feature: Feature;
+  complexity: {
+    overallComplexity: number;
+    scenarios: {
+      name: string;
+      complexity: number;
+      factors: {
+        stepCount: number;
+        dataDependencies: number;
+        conditionalLogic: number;
+        technicalDifficulty: number;
+      };
+      explanation: string;
+    }[];
+    recommendations: string[];
+  };
+  analysis: {
+    quality_score: number;
+    suggestions: string[];
+    improved_title?: string;
+  };
 }

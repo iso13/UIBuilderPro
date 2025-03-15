@@ -1,5 +1,5 @@
 import { features, analytics, users, type Feature, type InsertFeature, type Analytics, type User } from "@shared/schema";
-import { eq, ilike } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -10,39 +10,9 @@ const client = postgres(connectionString!, {
 });
 const db = drizzle(client);
 
-export interface IStorage {
-  // User management
-  createUser(user: { email: string; passwordHash: string; isAdmin: boolean }): Promise<User>;
-  getUser(id: number): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-
-  // Feature management
-  createFeature(feature: InsertFeature & { generatedContent: string, manuallyEdited?: boolean }): Promise<Feature>;
-  getFeature(id: number): Promise<Feature | undefined>;
-  getAllFeatures(includeDeleted?: boolean): Promise<Feature[]>;
-  updateFeature(id: number, feature: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature>;
-  softDeleteFeature(id: number): Promise<Feature>;
-  restoreFeature(id: number): Promise<Feature>;
-  findFeatureByTitle(title: string): Promise<Feature | undefined>;
-  permanentlyDeleteFeature(id: number): Promise<boolean>;
-  getFeatures(userId: number, filter: FeatureFilter): Promise<Feature[]>; // Added getFeatures method
-
-  // Analytics
-  trackEvent(event: Analytics): Promise<Analytics>;
-  getAnalytics(userId?: number): Promise<Analytics[]>;
-  logAnalyticsEvent(event: {
-    userId: number;
-    eventType: string;
-    featureId: number;
-    successful: boolean;
-    errorMessage: string | null;
-    scenarioCount: number | null;
-  }): Promise<Analytics>;
-}
-
 type FeatureFilter = "active" | "deleted" | "all";
 
-export class PostgresStorage implements IStorage {
+export class PostgresStorage {
   // User management methods
   async createUser(user: { email: string; passwordHash: string; isAdmin: boolean }): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
@@ -73,7 +43,7 @@ export class PostgresStorage implements IStorage {
   }
 
   async getAllFeatures(includeDeleted: boolean = false): Promise<Feature[]> {
-    console.log("Getting all features, includeDeleted:", includeDeleted); // Debug log
+    console.log("Getting all features, includeDeleted:", includeDeleted);
     try {
       let query = db.select().from(features);
 
@@ -82,9 +52,8 @@ export class PostgresStorage implements IStorage {
       }
 
       const result = await query;
-      console.log("Features query result:", result); // Debug log
+      console.log("Features query result:", result);
 
-      // Ensure we return an empty array if no results
       return result || [];
     } catch (error) {
       console.error("Error in getAllFeatures:", error);
@@ -95,7 +64,7 @@ export class PostgresStorage implements IStorage {
   async updateFeature(id: number, updateData: Partial<InsertFeature & { generatedContent?: string, manuallyEdited?: boolean }>): Promise<Feature> {
     const [feature] = await db
       .update(features)
-      .set(updateData)
+      .set({ ...updateData, updatedAt: new Date() })
       .where(eq(features.id, id))
       .returning();
     return feature;
@@ -104,7 +73,7 @@ export class PostgresStorage implements IStorage {
   async softDeleteFeature(id: number): Promise<Feature> {
     const [feature] = await db
       .update(features)
-      .set({ deleted: true })
+      .set({ deleted: true, updatedAt: new Date() })
       .where(eq(features.id, id))
       .returning();
     return feature;
@@ -113,27 +82,54 @@ export class PostgresStorage implements IStorage {
   async restoreFeature(id: number): Promise<Feature> {
     const [feature] = await db
       .update(features)
-      .set({ deleted: false })
+      .set({ 
+        deleted: false, 
+        updatedAt: new Date() 
+      })
       .where(eq(features.id, id))
       .returning();
-    return feature || null;
-  }
-
-  async permanentlyDeleteFeature(id: number): Promise<boolean> {
-    const result = await db
-      .delete(features)
-      .where(eq(features.id, id));
-
-    return result.rowCount > 0;
+    return feature;
   }
 
   async findFeatureByTitle(title: string): Promise<Feature | undefined> {
     const [feature] = await db
       .select()
       .from(features)
-      .where(ilike(features.title, title))
+      .where(eq(features.title, title)) 
       .limit(1);
     return feature;
+  }
+
+  async permanentlyDeleteFeature(id: number): Promise<boolean> {
+    const result = await db
+      .delete(features)
+      .where(eq(features.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getFeatures(userId: number, filter: FeatureFilter = "active"): Promise<Feature[]> {
+    try {
+      let conditions = [eq(features.userId, userId)];
+
+      if (filter === "active") {
+        conditions.push(eq(features.deleted, false));
+      } else if (filter === "deleted") {
+        conditions.push(eq(features.deleted, true));
+      }
+
+      const result = await db
+        .select()
+        .from(features)
+        .where(and(...conditions))
+        .orderBy(features.createdAt);
+
+      console.log(`Retrieved ${result?.length || 0} features with filter: ${filter}`);
+      return result || [];
+    } catch (error) {
+      console.error("Error in getFeatures:", error);
+      return [];
+    }
   }
 
   // Analytics methods
@@ -146,18 +142,16 @@ export class PostgresStorage implements IStorage {
     console.log("Getting analytics for user:", userId);
     try {
       if (userId) {
-        const results = await db
+        return await db
           .select()
           .from(analytics)
           .where(eq(analytics.userId, userId))
           .orderBy(analytics.createdAt);
-        return results;
       }
-      const results = await db
+      return await db
         .select()
         .from(analytics)
         .orderBy(analytics.createdAt);
-      return results;
     } catch (error) {
       console.error("Error fetching analytics:", error);
       return [];
@@ -184,32 +178,6 @@ export class PostgresStorage implements IStorage {
 
     const [analytic] = await db.insert(analytics).values(analyticsEvent).returning();
     return analytic;
-  }
-
-  async getFeatures(userId: number, filter: FeatureFilter = "active"): Promise<Feature[]> {
-    try {
-      let baseQuery = db.select().from(features);
-
-      // First, apply the filter based on deleted status
-      if (filter === "active") {
-        baseQuery = baseQuery.where(eq(features.deleted, false));
-      } else if (filter === "deleted") {
-        baseQuery = baseQuery.where(eq(features.deleted, true));
-      }
-      // For "all", we don't add a deleted filter
-
-      // Finally, filter by userId if provided
-      if (userId) {
-        baseQuery = baseQuery.where(eq(features.userId, userId));
-      }
-
-      const result = await baseQuery;
-      console.log(`Retrieved ${result?.length || 0} features with filter: ${filter}`);
-      return result || [];
-    } catch (error) {
-      console.error("Error in getFeatures:", error);
-      return [];
-    }
   }
 }
 
