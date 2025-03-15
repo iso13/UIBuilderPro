@@ -399,7 +399,7 @@ export function FeatureList() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-8">
           {!features || features.length === 0 ? (
             <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground">No features found. Generate your first feature!</p>
@@ -432,7 +432,7 @@ export function FeatureList() {
                     <Card className="bg-black hover:bg-black/70 transition-colors h-full">
                       <div className="p-6">
                         <div className="flex justify-between items-start">
-                          <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+                          <h3 className="text-lg font-semibold mb-3 line-clamp-2">{feature.title}</h3>
                           <div className="flex gap-2">
                             <Button
                               variant="ghost"
@@ -465,7 +465,7 @@ export function FeatureList() {
                             </Button>
                           </div>
                         </div>
-                        <p className="text-muted-foreground mb-4 line-clamp-3">{feature.story}</p>
+                        <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">{feature.story}</p>
                         <div className="text-sm text-muted-foreground">
                           Created: {new Date(feature.createdAt).toLocaleDateString()}
                         </div>
