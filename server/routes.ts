@@ -183,6 +183,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  app.post("/api/features/restore-all", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Get all deleted features
+      const deletedFeatures = await storage.getFeatures(userId, "deleted");
+
+      // Restore each feature
+      await Promise.all(
+        deletedFeatures.map(feature => storage.restoreFeature(feature.id))
+      );
+
+      res.json({ message: `Restored ${deletedFeatures.length} features` });
+    } catch (error: any) {
+      console.error("Error in bulk restore:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/analytics", requireAuth, async (req: Request, res: Response) => {
     try {
       const userId = req.session.userId;

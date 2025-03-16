@@ -1,13 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { type Analytics, type Feature } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface AnalyticsWithTitle extends Analytics {
   featureTitle?: string;
 }
 
 export default function Analytics() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   // Query for analytics data
   const { data: analytics, isLoading: isLoadingAnalytics, error: analyticsError } = useQuery<AnalyticsWithTitle[]>({
     queryKey: ["/api/analytics"],
@@ -21,6 +26,36 @@ export default function Analytics() {
   // Query for deleted features
   const { data: deletedFeatures, isLoading: isLoadingDeletedFeatures } = useQuery<Feature[]>({
     queryKey: ["/api/features", "deleted"],
+  });
+
+  // Add restore all mutation
+  const restoreAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/features/restore-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to restore features");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
+      toast({
+        title: "Success",
+        description: "All archived features have been restored",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
   });
 
   // Show loading state
@@ -84,6 +119,17 @@ export default function Analytics() {
               <p className="text-sm text-muted-foreground mt-1">
                 Active: {totalActiveFeatures} • Archived: {totalArchivedFeatures}
               </p>
+              {totalArchivedFeatures > 0 && (
+                <Button
+                  onClick={() => restoreAllMutation.mutate()}
+                  disabled={restoreAllMutation.isPending}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                >
+                  {restoreAllMutation.isPending ? "Restoring..." : "Restore All Archived"}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
