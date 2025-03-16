@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { type Analytics } from "@shared/schema";
+import { type Analytics, type Feature } from "@shared/schema";
 
 interface AnalyticsWithTitle extends Analytics {
   featureTitle?: string;
@@ -13,13 +13,18 @@ export default function Analytics() {
     queryKey: ["/api/analytics"],
   });
 
-  // Query for features data to get accurate total count
-  const { data: features, isLoading: isLoadingFeatures } = useQuery({
-    queryKey: ["/api/features"],
+  // Query for active features
+  const { data: activeFeatures, isLoading: isLoadingActiveFeatures } = useQuery<Feature[]>({
+    queryKey: ["/api/features", "active"],
+  });
+
+  // Query for deleted features
+  const { data: deletedFeatures, isLoading: isLoadingDeletedFeatures } = useQuery<Feature[]>({
+    queryKey: ["/api/features", "deleted"],
   });
 
   // Show loading state
-  if (isLoadingAnalytics || isLoadingFeatures) {
+  if (isLoadingAnalytics || isLoadingActiveFeatures || isLoadingDeletedFeatures) {
     return (
       <div className="container mx-auto px-4 py-8 mt-16">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -45,7 +50,9 @@ export default function Analytics() {
   }
 
   // Calculate analytics metrics
-  const totalFeatures = features?.length || 0;
+  const totalActiveFeatures = activeFeatures?.length || 0;
+  const totalArchivedFeatures = deletedFeatures?.length || 0;
+  const totalFeatures = totalActiveFeatures + totalArchivedFeatures;
 
   const successfulFeatures = analytics.filter(
     (event) => event.eventType === "feature_generation" && event.successful
@@ -74,6 +81,9 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">{totalFeatures}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Active: {totalActiveFeatures} • Archived: {totalArchivedFeatures}
+              </p>
             </CardContent>
           </Card>
 
