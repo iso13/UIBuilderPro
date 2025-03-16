@@ -40,22 +40,22 @@ export default function App() {
           <div className="min-h-screen bg-background">
             <Suspense fallback={<Loading />}>
               <Switch>
-                <Route path="/login">
-                  <Login />
-                </Route>
-                <Route path="/signup">
-                  <Signup />
+                <Route path="/login" component={Login} />
+                <Route path="/signup" component={Signup} />
+                <Route path="/analytics">
+                  <AuthenticatedLayout>
+                    <ProtectedRoute path="/analytics" component={Analytics} />
+                  </AuthenticatedLayout>
                 </Route>
                 <Route path="/">
-                  <ProtectedRoute path="*" component={() => (
-                    <AuthenticatedLayout>
-                      <Switch>
-                        <Route path="/" component={Home} />
-                        <Route path="/analytics" component={Analytics} />
-                        <Route component={NotFound} />
-                      </Switch>
-                    </AuthenticatedLayout>
-                  )} />
+                  <AuthenticatedLayout>
+                    <ProtectedRoute path="/" component={Home} />
+                  </AuthenticatedLayout>
+                </Route>
+                <Route>
+                  <AuthenticatedLayout>
+                    <NotFound />
+                  </AuthenticatedLayout>
                 </Route>
               </Switch>
             </Suspense>

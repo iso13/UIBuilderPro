@@ -1,10 +1,23 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Route } from "wouter";
+import { Route, useLocation } from "wouter";
 import React from 'react';
 
-function AuthenticationCheck({ children }: { children: React.ReactNode }) {
+export function ProtectedRoute({
+  path,
+  component: Component,
+}: {
+  path: string;
+  component: () => React.JSX.Element;
+}) {
   const { user, isLoading } = useAuth();
+  const [, navigate] = useLocation();
+
+  React.useEffect(() => {
+    if (!isLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, isLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -14,23 +27,5 @@ function AuthenticationCheck({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return user ? <>{children}</> : null;
-}
-
-export function ProtectedRoute({
-  path,
-  component: Component,
-}: {
-  path: string;
-  component: () => React.JSX.Element;
-}) {
-  return (
-    <Route path={path}>
-      {(params) => (
-        <AuthenticationCheck>
-          <Component {...params} />
-        </AuthenticationCheck>
-      )}
-    </Route>
-  );
+  return user ? <Component /> : null;
 }
