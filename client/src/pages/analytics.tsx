@@ -3,8 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { type Analytics } from "@shared/schema";
 
+interface AnalyticsWithTitle extends Analytics {
+  featureTitle?: string;
+}
+
 export default function Analytics() {
-  const { data: analytics, isLoading, error } = useQuery<Analytics[]>({
+  const { data: analytics, isLoading, error } = useQuery<AnalyticsWithTitle[]>({
     queryKey: ["/api/analytics"],
   });
 
@@ -115,9 +119,7 @@ export default function Analytics() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium">
-                        {event.eventType === "feature_generation"
-                          ? "Feature Generation"
-                          : "Feature View"}
+                        {event.featureTitle || 'Untitled Feature'}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {event.successful ? "Success" : "Failed"}
