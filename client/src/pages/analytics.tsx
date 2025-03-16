@@ -8,12 +8,18 @@ interface AnalyticsWithTitle extends Analytics {
 }
 
 export default function Analytics() {
-  const { data: analytics, isLoading, error } = useQuery<AnalyticsWithTitle[]>({
+  // Query for analytics data
+  const { data: analytics, isLoading: isLoadingAnalytics, error: analyticsError } = useQuery<AnalyticsWithTitle[]>({
     queryKey: ["/api/analytics"],
   });
 
+  // Query for features data to get accurate total count
+  const { data: features, isLoading: isLoadingFeatures } = useQuery({
+    queryKey: ["/api/features"],
+  });
+
   // Show loading state
-  if (isLoading) {
+  if (isLoadingAnalytics || isLoadingFeatures) {
     return (
       <div className="container mx-auto px-4 py-8 mt-16">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -25,13 +31,13 @@ export default function Analytics() {
   }
 
   // Show error or no data state
-  if (error || !analytics) {
+  if (analyticsError || !analytics) {
     return (
       <div className="container mx-auto px-4 py-8 mt-16">
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <h1 className="text-2xl font-bold mb-2">Analytics Dashboard</h1>
           <p className="text-muted-foreground">
-            {error ? "Error loading analytics data" : "No analytics data available yet"}
+            {analyticsError ? "Error loading analytics data" : "No analytics data available yet"}
           </p>
         </div>
       </div>
@@ -39,9 +45,7 @@ export default function Analytics() {
   }
 
   // Calculate analytics metrics
-  const totalFeatures = analytics.filter(
-    (event) => event.eventType === "feature_generation"
-  ).length;
+  const totalFeatures = features?.length || 0;
 
   const successfulFeatures = analytics.filter(
     (event) => event.eventType === "feature_generation" && event.successful
