@@ -1,4 +1,4 @@
-import { Switch, Route, Router } from "wouter";
+import { Switch, Route } from "wouter";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./hooks/use-auth";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -37,32 +37,30 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <AuthProvider>
-          <Router>
-            <div className="min-h-screen bg-background">
-              <Suspense fallback={<Loading />}>
-                <Switch>
-                  <Route path="/login">
-                    <Login />
-                  </Route>
-                  <Route path="/signup">
-                    <Signup />
-                  </Route>
-                  <Route path="/">
-                    <ProtectedRoute path="*" component={() => (
-                      <AuthenticatedLayout>
-                        <Switch>
-                          <Route path="/" component={Home} />
-                          <Route path="/analytics" component={Analytics} />
-                          <Route component={NotFound} />
-                        </Switch>
-                      </AuthenticatedLayout>
-                    )} />
-                  </Route>
-                </Switch>
-              </Suspense>
-            </div>
-            <Toaster position="top-right" />
-          </Router>
+          <div className="min-h-screen bg-background">
+            <Suspense fallback={<Loading />}>
+              <Switch>
+                <Route path="/login">
+                  <Login />
+                </Route>
+                <Route path="/signup">
+                  <Signup />
+                </Route>
+                <Route path="/">
+                  <ProtectedRoute path="*" component={() => (
+                    <AuthenticatedLayout>
+                      <Switch>
+                        <Route path="/" component={Home} />
+                        <Route path="/analytics" component={Analytics} />
+                        <Route component={NotFound} />
+                      </Switch>
+                    </AuthenticatedLayout>
+                  )} />
+                </Route>
+              </Switch>
+            </Suspense>
+          </div>
+          <Toaster position="top-right" />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
