@@ -119,10 +119,11 @@ export default function Analytics() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium">
-                        {event.featureTitle || 'Untitled Feature'}
+                        {event.featureTitle || "Untitled Feature"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {event.successful ? "Success" : "Failed"}
+                        {event.eventType === "feature_generation" ? "Generation" : "View"}
+                        {event.successful ? " • Success" : " • Failed"}
                         {event.scenarioCount &&
                           ` • ${event.scenarioCount} scenarios`}
                       </p>

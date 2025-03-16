@@ -158,16 +158,43 @@ export class PostgresStorage {
     console.log("Getting analytics for user:", userId);
     try {
       if (userId) {
-        return await db
-          .select()
+        const results = await db
+          .select({
+            id: analytics.id,
+            userId: analytics.userId,
+            eventType: analytics.eventType,
+            featureId: analytics.featureId,
+            successful: analytics.successful,
+            errorMessage: analytics.errorMessage,
+            scenarioCount: analytics.scenarioCount,
+            createdAt: analytics.createdAt,
+            featureTitle: features.title
+          })
           .from(analytics)
+          .leftJoin(features, eq(analytics.featureId, features.id))
           .where(eq(analytics.userId, userId))
           .orderBy(analytics.createdAt);
+
+        return results;
       }
-      return await db
-        .select()
+
+      const results = await db
+        .select({
+          id: analytics.id,
+          userId: analytics.userId,
+          eventType: analytics.eventType,
+          featureId: analytics.featureId,
+          successful: analytics.successful,
+          errorMessage: analytics.errorMessage,
+          scenarioCount: analytics.scenarioCount,
+          createdAt: analytics.createdAt,
+          featureTitle: features.title
+        })
         .from(analytics)
+        .leftJoin(features, eq(analytics.featureId, features.id))
         .orderBy(analytics.createdAt);
+
+      return results;
     } catch (error) {
       console.error("Error fetching analytics:", error);
       return [];
