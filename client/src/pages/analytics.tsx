@@ -120,8 +120,8 @@ export default function Analytics() {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {analytics.slice(0, 10).map((event) => (
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {analytics.map((event) => (
                 <div
                   key={event.id}
                   className={`p-4 rounded-lg border ${
