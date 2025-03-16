@@ -217,7 +217,7 @@ export function FeatureList() {
     mutationFn: async (feature: Feature) => {
       // Create a Blob with the feature content
       const blob = new Blob([feature.generatedContent || ''], { 
-        type: 'text/plain' 
+        type: 'application/msword' 
       });
 
       // Create the download link
@@ -226,7 +226,7 @@ export function FeatureList() {
       link.href = url;
 
       // Create sanitized file name from feature title
-      const fileName = `${feature.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.feature`;
+      const fileName = `${feature.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.doc`;
       link.setAttribute('download', fileName);
 
       // Trigger download
